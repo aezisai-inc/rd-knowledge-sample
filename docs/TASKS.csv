@@ -8,5 +8,6 @@ TASK-006,メモリアーキテクチャ設計ドキュメント作成,completed,
 TASK-007,Graphiti統合設計ドキュメント作成,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-006,GRAPHITI_INTEGRATION_DESIGN.md PR#1
 TASK-008,採用判断ガイド追加,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-007,README.md更新 PR#2
 TASK-009,ARIA経験同期ファイル作成,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-008,well-known#58 cursor-rules#64
+TASK-010,Amplify Gen2 UI機能追加,completed,AI,high,2024-12-25,2024-12-25,4,2,TASK-009,Next.js + Amplify Gen2統合
 
 
