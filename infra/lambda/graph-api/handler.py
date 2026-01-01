@@ -1,264 +1,310 @@
 """
 Graph API Lambda Handler
 
-Neptune Serverless へのアクセス API
+Neo4j AuraDB / Local Neo4j 対応のグラフ API。
+Secrets Manager から接続情報を取得。
 """
 
 import json
 import logging
 import os
+from datetime import datetime
 from typing import Any
 
-from gremlin_python.driver import client, serializer
-from gremlin_python.driver.protocol import GremlinServerError
+import boto3
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
-ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
-NEPTUNE_ENDPOINT = os.environ.get("NEPTUNE_ENDPOINT", "localhost:8182")
+# Secrets Manager から Neo4j 接続情報を取得
+_neo4j_config: dict[str, str] | None = None
 
 
-def get_gremlin_client():
-    """Gremlin クライアントを取得"""
-    endpoint = f"wss://{NEPTUNE_ENDPOINT}/gremlin"
-    if ENVIRONMENT == "local":
-        # ローカル環境では Neo4j Bolt を使用 (別途アダプタが必要)
-        endpoint = f"ws://{NEPTUNE_ENDPOINT}/gremlin"
+def get_neo4j_config() -> dict[str, str]:
+    """Neo4j 接続情報を取得（キャッシュ付き）"""
+    global _neo4j_config
 
-    return client.Client(
-        endpoint,
-        "g",
-        message_serializer=serializer.GraphSONSerializersV2d0(),
-    )
+    if _neo4j_config is not None:
+        return _neo4j_config
+
+    secret_arn = os.environ.get("NEO4J_SECRET_ARN")
+
+    if secret_arn:
+        try:
+            secrets_client = boto3.client("secretsmanager")
+            response = secrets_client.get_secret_value(SecretId=secret_arn)
+            _neo4j_config = json.loads(response["SecretString"])
+            logger.info(f"Neo4j config loaded from Secrets Manager")
+        except Exception as e:
+            logger.error(f"Failed to get Neo4j secret: {e}")
+            _neo4j_config = {
+                "uri": "bolt://localhost:7687",
+                "user": "neo4j",
+                "password": "password",
+                "database": "neo4j",
+            }
+    else:
+        # ローカル開発用のデフォルト
+        _neo4j_config = {
+            "uri": os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
+            "user": os.environ.get("NEO4J_USER", "neo4j"),
+            "password": os.environ.get("NEO4J_PASSWORD", "password"),
+            "database": os.environ.get("NEO4J_DATABASE", "neo4j"),
+        }
+
+    return _neo4j_config
+
+
+class Neo4jClient:
+    """Neo4j クライアント（Lambda 用）"""
+
+    def __init__(self):
+        config = get_neo4j_config()
+        self.uri = config["uri"]
+        self.user = config["user"]
+        self.password = config["password"]
+        self.database = config.get("database", "neo4j")
+        self._driver = None
+
+    def connect(self):
+        """接続"""
+        if self._driver is None:
+            try:
+                from neo4j import GraphDatabase
+
+                self._driver = GraphDatabase.driver(
+                    self.uri,
+                    auth=(self.user, self.password),
+                )
+                logger.info(f"Connected to Neo4j")
+            except Exception as e:
+                logger.error(f"Failed to connect to Neo4j: {e}")
+                raise
+
+    def execute(self, query: str, parameters: dict[str, Any] | None = None) -> list[dict]:
+        """Cypher クエリ実行"""
+        self.connect()
+
+        with self._driver.session(database=self.database) as session:
+            result = session.run(query, parameters or {})
+            return [dict(record) for record in result]
+
+    def close(self):
+        """接続クローズ"""
+        if self._driver:
+            self._driver.close()
+            self._driver = None
+
+
+# グローバルクライアント（Lambda コンテナ再利用のため）
+_client: Neo4jClient | None = None
+
+
+def get_client() -> Neo4jClient:
+    """クライアント取得"""
+    global _client
+    if _client is None:
+        _client = Neo4jClient()
+    return _client
 
 
 def lambda_handler(event: dict, context: Any) -> dict:
-    """
-    Lambda ハンドラー
-
-    エンドポイント:
-    - POST /v1/graph/nodes: ノード作成
-    - GET /v1/graph/nodes: ノード一覧
-    - GET /v1/graph/nodes/{nodeId}: ノード取得
-    - PUT /v1/graph/nodes/{nodeId}: ノード更新
-    - DELETE /v1/graph/nodes/{nodeId}: ノード削除
-    - POST /v1/graph/edges: エッジ作成
-    - POST /v1/graph/query: Gremlin クエリ実行
-    """
+    """Lambda ハンドラ"""
     logger.info(f"Event: {json.dumps(event)}")
 
-    http_method = event.get("httpMethod", "GET")
-    path = event.get("path", "")
-    path_params = event.get("pathParameters") or {}
-    query_params = event.get("queryStringParameters") or {}
-    body = json.loads(event.get("body") or "{}")
-
     try:
-        # ノード操作
-        if "/nodes" in path:
-            if http_method == "POST" and path.endswith("/nodes"):
-                return create_node(body)
-            elif http_method == "GET" and path.endswith("/nodes"):
-                return list_nodes(query_params)
-            elif "nodeId" in path_params:
-                node_id = path_params["nodeId"]
-                if http_method == "GET":
-                    return get_node(node_id)
-                elif http_method == "PUT":
-                    return update_node(node_id, body)
-                elif http_method == "DELETE":
-                    return delete_node(node_id)
+        http_method = event.get("httpMethod", "GET")
+        path = event.get("path", "")
+        path_params = event.get("pathParameters") or {}
+        query_params = event.get("queryStringParameters") or {}
+        body = json.loads(event.get("body") or "{}")
 
-        # エッジ操作
-        elif "/edges" in path:
-            if http_method == "POST":
-                return create_edge(body)
+        client = get_client()
 
-        # クエリ実行
-        elif "/query" in path:
-            if http_method == "POST":
-                return execute_query(body)
+        # ルーティング
+        if path.endswith("/nodes") and http_method == "POST":
+            # ノード作成
+            result = create_node(client, body)
+        elif path.endswith("/nodes") and http_method == "GET":
+            # ノード一覧
+            result = list_nodes(client, query_params)
+        elif "/nodes/" in path and http_method == "GET":
+            # ノード取得
+            node_id = path_params.get("nodeId")
+            result = get_node(client, node_id)
+        elif "/nodes/" in path and http_method == "PUT":
+            # ノード更新
+            node_id = path_params.get("nodeId")
+            result = update_node(client, node_id, body)
+        elif "/nodes/" in path and http_method == "DELETE":
+            # ノード削除
+            node_id = path_params.get("nodeId")
+            result = delete_node(client, node_id)
+        elif path.endswith("/edges") and http_method == "POST":
+            # エッジ作成
+            result = create_edge(client, body)
+        elif path.endswith("/query") and http_method == "POST":
+            # Cypher クエリ実行
+            result = execute_query(client, body)
+        else:
+            return response(404, {"error": "Not Found"})
 
-        return response(404, {"error": "Not Found"})
-    except GremlinServerError as e:
-        logger.exception("Gremlin error")
-        return response(500, {"error": f"Graph database error: {str(e)}"})
+        return response(200, result)
+
     except Exception as e:
-        logger.exception("Error processing request")
+        logger.exception(f"Error: {e}")
         return response(500, {"error": str(e)})
 
 
-def create_node(body: dict) -> dict:
+def create_node(client: Neo4jClient, body: dict) -> dict:
     """ノード作成"""
-    node_id = body.get("node_id")
-    node_type = body.get("node_type", "Entity")
+    node_id = body.get("id") or f"node-{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+    node_type = body.get("type", "Entity")
     properties = body.get("properties", {})
 
-    if not node_id:
-        return response(400, {"error": "node_id is required"})
+    props = {"id": node_id, **properties}
 
-    gremlin = get_gremlin_client()
-    try:
-        # Gremlin クエリを構築
-        query = f"g.addV('{node_type}').property('id', '{node_id}')"
-        for key, value in properties.items():
-            escaped_value = str(value).replace("'", "\\'")
-            query += f".property('{key}', '{escaped_value}')"
+    client.execute(
+        f"CREATE (n:{node_type} $props) RETURN n",
+        {"props": props},
+    )
 
-        gremlin.submit(query).all().result()
-
-        return response(201, {"node_id": node_id, "message": "Node created"})
-    finally:
-        gremlin.close()
+    return {"id": node_id, "type": node_type, "properties": properties}
 
 
-def list_nodes(query_params: dict) -> dict:
+def list_nodes(client: Neo4jClient, params: dict) -> dict:
     """ノード一覧"""
-    node_type = query_params.get("type")
-    limit = int(query_params.get("limit", "100"))
+    node_type = params.get("type")
+    limit = int(params.get("limit", 100))
 
-    gremlin = get_gremlin_client()
-    try:
-        if node_type:
-            query = f"g.V().hasLabel('{node_type}').limit({limit}).valueMap(true)"
-        else:
-            query = f"g.V().limit({limit}).valueMap(true)"
+    if node_type:
+        results = client.execute(
+            f"MATCH (n:{node_type}) RETURN n, labels(n) as labels LIMIT $limit",
+            {"limit": limit},
+        )
+    else:
+        results = client.execute(
+            "MATCH (n) RETURN n, labels(n) as labels LIMIT $limit",
+            {"limit": limit},
+        )
 
-        results = gremlin.submit(query).all().result()
+    nodes = []
+    for record in results:
+        node_data = dict(record["n"])
+        node_id = node_data.pop("id", "")
+        labels = record["labels"]
 
-        nodes = []
-        for r in results:
-            node = {"node_id": r.get("id", [None])[0], "node_type": r.get("label", "")}
-            properties = {k: v[0] if isinstance(v, list) and len(v) == 1 else v for k, v in r.items() if k not in ["id", "label"]}
-            node["properties"] = properties
-            nodes.append(node)
+        nodes.append({
+            "id": node_id,
+            "type": labels[0] if labels else "",
+            "properties": node_data,
+        })
 
-        return response(200, {"nodes": nodes})
-    finally:
-        gremlin.close()
+    return {"nodes": nodes, "count": len(nodes)}
 
 
-def get_node(node_id: str) -> dict:
+def get_node(client: Neo4jClient, node_id: str) -> dict:
     """ノード取得"""
-    gremlin = get_gremlin_client()
-    try:
-        query = f"g.V().has('id', '{node_id}').valueMap(true)"
-        results = gremlin.submit(query).all().result()
+    results = client.execute(
+        "MATCH (n {id: $id}) RETURN n, labels(n) as labels",
+        {"id": node_id},
+    )
 
-        if not results:
-            return response(404, {"error": "Node not found"})
+    if not results:
+        return {"error": "Node not found"}
 
-        r = results[0]
-        node = {
-            "node_id": r.get("id", [None])[0],
-            "node_type": r.get("label", ""),
-            "properties": {
-                k: v[0] if isinstance(v, list) and len(v) == 1 else v
-                for k, v in r.items()
-                if k not in ["id", "label"]
-            },
-        }
+    record = results[0]
+    node_data = dict(record["n"])
+    node_data.pop("id", None)
+    labels = record["labels"]
 
-        return response(200, node)
-    finally:
-        gremlin.close()
+    return {
+        "id": node_id,
+        "type": labels[0] if labels else "",
+        "properties": node_data,
+    }
 
 
-def update_node(node_id: str, body: dict) -> dict:
+def update_node(client: Neo4jClient, node_id: str, body: dict) -> dict:
     """ノード更新"""
     properties = body.get("properties", {})
 
-    if not properties:
-        return response(400, {"error": "properties is required"})
+    results = client.execute(
+        "MATCH (n {id: $id}) SET n += $props RETURN n",
+        {"id": node_id, "props": properties},
+    )
 
-    gremlin = get_gremlin_client()
-    try:
-        # プロパティを更新
-        query = f"g.V().has('id', '{node_id}')"
-        for key, value in properties.items():
-            escaped_value = str(value).replace("'", "\\'")
-            query += f".property('{key}', '{escaped_value}')"
+    if not results:
+        return {"error": "Node not found"}
 
-        results = gremlin.submit(query).all().result()
-
-        if not results:
-            return response(404, {"error": "Node not found"})
-
-        return response(200, {"message": "Node updated"})
-    finally:
-        gremlin.close()
+    return {"id": node_id, "updated": True}
 
 
-def delete_node(node_id: str) -> dict:
+def delete_node(client: Neo4jClient, node_id: str) -> dict:
     """ノード削除"""
-    gremlin = get_gremlin_client()
-    try:
-        query = f"g.V().has('id', '{node_id}').drop()"
-        gremlin.submit(query).all().result()
+    results = client.execute(
+        "MATCH (n {id: $id}) DETACH DELETE n RETURN count(n) as deleted",
+        {"id": node_id},
+    )
 
-        return response(200, {"message": "Node deleted"})
-    finally:
-        gremlin.close()
+    deleted = results[0]["deleted"] if results else 0
+    return {"id": node_id, "deleted": deleted > 0}
 
 
-def create_edge(body: dict) -> dict:
+def create_edge(client: Neo4jClient, body: dict) -> dict:
     """エッジ作成"""
-    source_id = body.get("source_id")
-    target_id = body.get("target_id")
-    edge_type = body.get("edge_type", "RELATES_TO")
+    source_id = body.get("sourceId")
+    target_id = body.get("targetId")
+    edge_type = body.get("type", "RELATED_TO")
     properties = body.get("properties", {})
 
-    if not source_id or not target_id:
-        return response(400, {"error": "source_id and target_id are required"})
+    edge_id = f"edge-{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+    props = {"id": edge_id, **properties}
 
-    gremlin = get_gremlin_client()
-    try:
-        query = f"g.V().has('id', '{source_id}').addE('{edge_type}').to(g.V().has('id', '{target_id}'))"
-        for key, value in properties.items():
-            escaped_value = str(value).replace("'", "\\'")
-            query += f".property('{key}', '{escaped_value}')"
+    client.execute(
+        f"""
+        MATCH (a {{id: $source_id}}), (b {{id: $target_id}})
+        CREATE (a)-[r:{edge_type} $props]->(b)
+        RETURN r
+        """,
+        {"source_id": source_id, "target_id": target_id, "props": props},
+    )
 
-        gremlin.submit(query).all().result()
+    return {
+        "id": edge_id,
+        "sourceId": source_id,
+        "targetId": target_id,
+        "type": edge_type,
+    }
 
-        return response(
-            201, {"message": "Edge created", "source_id": source_id, "target_id": target_id}
-        )
-    finally:
-        gremlin.close()
 
-
-def execute_query(body: dict) -> dict:
-    """Gremlin クエリ実行"""
-    query = body.get("query")
+def execute_query(client: Neo4jClient, body: dict) -> dict:
+    """Cypher クエリ実行"""
+    query = body.get("query", "")
+    parameters = body.get("parameters", {})
 
     if not query:
-        return response(400, {"error": "query is required"})
+        return {"error": "Query is required"}
 
-    # セキュリティ: 危険なクエリを拒否
-    dangerous_keywords = ["drop()", "clear()", "removeAll"]
-    for keyword in dangerous_keywords:
-        if keyword in query.lower():
-            return response(400, {"error": f"Dangerous operation not allowed: {keyword}"})
+    # 危険なクエリをブロック（本番では更に厳密に）
+    dangerous_keywords = ["DELETE", "DROP", "REMOVE"]
+    if any(keyword in query.upper() for keyword in dangerous_keywords):
+        return {"error": "Destructive queries are not allowed via this endpoint"}
 
-    gremlin = get_gremlin_client()
-    try:
-        results = gremlin.submit(query).all().result()
+    results = client.execute(query, parameters)
 
-        return response(200, {"results": results})
-    finally:
-        gremlin.close()
+    return {"results": results, "count": len(results)}
 
 
 def response(status_code: int, body: dict) -> dict:
-    """API Gateway 用レスポンス"""
+    """API Gateway レスポンス"""
     return {
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type,Authorization",
+            "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date",
+            "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
         },
         "body": json.dumps(body, ensure_ascii=False, default=str),
     }
-

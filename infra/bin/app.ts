@@ -3,9 +3,13 @@
  * rd-knowledge-sample CDK Application
  *
  * スタック構成:
- * - StorageStack: S3, Neptune Serverless
+ * - StorageStack: S3, Neo4j (AuraDB)
  * - ComputeStack: Lambda, API Gateway
+ * - FrontendStack: S3, CloudFront
  * - PipelineStack: CodePipeline CI/CD
+ *
+ * グラフDB: Neptune Serverless → Neo4j AuraDB に移行
+ * コスト削減: ~$166/月 → $0〜65/月
  */
 
 import "source-map-support/register";
@@ -41,7 +45,7 @@ const storageStack = new StorageStack(app, `RdKnowledge-Storage-${envName}`, {
   env,
   config,
   tags,
-  description: "rd-knowledge-sample Storage Layer (S3, Neptune)",
+  description: "rd-knowledge-sample Storage Layer (S3, Neo4j config)",
 });
 
 // =============================================================================

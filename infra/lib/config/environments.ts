@@ -1,5 +1,8 @@
 /**
  * 環境設定
+ *
+ * グラフDB: Neptune → Neo4j AuraDB に移行
+ * コスト削減: ~$166/月 → $0〜65/月
  */
 
 export interface EnvironmentConfig {
@@ -11,12 +14,14 @@ export interface EnvironmentConfig {
   region: string;
   /** CI/CD パイプライン有効化 */
   enablePipeline: boolean;
-  /** Neptune 設定 */
-  neptune: {
-    /** 最小 NCU */
-    minCapacity: number;
-    /** 最大 NCU */
-    maxCapacity: number;
+  /** Neo4j 設定 (AuraDB or Local) */
+  neo4j?: {
+    /** 接続 URI (neo4j+s://xxx for AuraDB, bolt://localhost:7687 for local) */
+    uri: string;
+    /** ユーザー名 */
+    user: string;
+    /** データベース名 */
+    database: string;
   };
   /** Lambda 設定 */
   lambda: {
@@ -45,11 +50,14 @@ export interface EnvironmentConfig {
 const environments: Record<string, EnvironmentConfig> = {
   dev: {
     envName: "dev",
-    region: "us-west-2",
+    region: "ap-northeast-1",
     enablePipeline: false,
-    neptune: {
-      minCapacity: 1,
-      maxCapacity: 2.5,
+    neo4j: {
+      // ローカル Docker Neo4j（開発用）
+      // 本番用は AuraDB の URI に変更
+      uri: "bolt://localhost:7687",
+      user: "neo4j",
+      database: "neo4j",
     },
     lambda: {
       memorySize: 256,
@@ -63,11 +71,13 @@ const environments: Record<string, EnvironmentConfig> = {
   },
   staging: {
     envName: "staging",
-    region: "us-west-2",
+    region: "ap-northeast-1",
     enablePipeline: true,
-    neptune: {
-      minCapacity: 2.5,
-      maxCapacity: 4,
+    neo4j: {
+      // Neo4j AuraDB Professional
+      uri: "neo4j+s://staging.databases.neo4j.io",
+      user: "neo4j",
+      database: "neo4j",
     },
     lambda: {
       memorySize: 512,
@@ -86,11 +96,13 @@ const environments: Record<string, EnvironmentConfig> = {
   },
   prod: {
     envName: "prod",
-    region: "us-west-2",
+    region: "ap-northeast-1",
     enablePipeline: true,
-    neptune: {
-      minCapacity: 2.5,
-      maxCapacity: 8,
+    neo4j: {
+      // Neo4j AuraDB Professional
+      uri: "neo4j+s://prod.databases.neo4j.io",
+      user: "neo4j",
+      database: "neo4j",
     },
     lambda: {
       memorySize: 1024,
@@ -118,4 +130,3 @@ export function getEnvironmentConfig(envName: string): EnvironmentConfig {
   }
   return config;
 }
-
