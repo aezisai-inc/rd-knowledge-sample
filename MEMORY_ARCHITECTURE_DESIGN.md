@@ -601,6 +601,73 @@ flowchart LR
 
 ---
 
+## 🔄 ローカル環境 vs AWS本番環境
+
+### 環境差分マトリクス
+
+| サービス | ローカル実装 | AWS本番実装 | 切り替えポイント |
+|---------|-------------|-------------|-----------------|
+| **AgentCore Memory** | SQLite + In-memory | `bedrock-agentcore` クライアント | 認証・エンドポイント |
+| **Bedrock KB** | Ollama + ChromaDB | `bedrock-agent-runtime` | モデルARN・KB ID |
+| **S3 Vectors** | LocalStack / FAISS | `s3vectors` クライアント | バケット名・リージョン |
+| **Neptune** | Neo4j (Docker) | Neptune Serverless | 接続文字列・IAM認証 |
+
+### 実装パターン: Protocol + Adapter
+
+```python
+from typing import Protocol
+from dataclasses import dataclass
+
+# 共通インターフェース
+class MemoryStore(Protocol):
+    def save_event(self, actor_id: str, event: dict) -> str: ...
+    def retrieve(self, actor_id: str, query: str, limit: int) -> list[dict]: ...
+
+# ローカル実装
+@dataclass
+class LocalMemoryStore:
+    db_path: str = ":memory:"
+    
+    def save_event(self, actor_id: str, event: dict) -> str:
+        # SQLite実装
+        ...
+
+# AWS実装
+@dataclass  
+class AWSMemoryStore:
+    memory_id: str
+    region: str = "us-east-1"
+    
+    def save_event(self, actor_id: str, event: dict) -> str:
+        # boto3 bedrock-agentcore 実装
+        client = boto3.client("bedrock-agentcore", region_name=self.region)
+        return client.create_event(memoryId=self.memory_id, ...)
+```
+
+### 環境切り替え設定
+
+```python
+# config.py
+import os
+
+ENV = os.getenv("ENVIRONMENT", "local")
+
+ADAPTERS = {
+    "local": {
+        "memory": "src.adapters.local.LocalMemoryStore",
+        "vector_store": "src.adapters.local.LocalVectorStore",
+        "knowledge_base": "src.adapters.local.LocalKnowledgeBase",
+    },
+    "aws": {
+        "memory": "src.adapters.aws.AWSMemoryStore",
+        "vector_store": "src.adapters.aws.AWSVectorStore",
+        "knowledge_base": "src.adapters.aws.AWSKnowledgeBase",
+    }
+}
+```
+
+---
+
 ## 📚 参考リンク
 
 - [Amazon Bedrock AgentCore Memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html)

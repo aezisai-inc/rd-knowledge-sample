@@ -22,9 +22,9 @@ TASK-017,AWS VectorStore アダプタ実装,boto3 s3vectors による VectorStor
 TASK-018,AWS KnowledgeBase アダプタ実装,boto3 bedrock-agent/bedrock-agent-runtime による KnowledgeBase Protocol 実装。Retrieve/RetrieveAndGenerate API対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/knowledge_base.py
 TASK-019,AWS Memory アダプタ実装,boto3 bedrock-agentcore による Memory Protocol 実装。create_event/retrieve_records/memoryStrategies対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/memory_store.py
 TASK-020,AWS Graph アダプタ実装,Neptune Serverless + Gremlin による Graph Protocol 実装。Gremlin クエリ・パス検索対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/graph_store.py
-TASK-021,IAMロール・ポリシー定義,各サービスアクセス用の最小権限IAMロール・ポリシー定義。CDK構成サンプル参照用,pending,,high,,,2,,TASK-020,CDK構成参考
-# Phase 4: 環境差分比較ドキュメント
-TASK-022,環境差分比較マトリクス作成,ローカル vs AWS の差分マトリクス。エンドポイント/認証/設定/コスト/制限の比較表作成,pending,,critical,,,3,,TASK-021,ENVIRONMENT_COMPARISON.md
-TASK-023,環境切り替えガイド作成,ENVIRONMENT 環境変数による切り替え方法。config.py パターン・DI コンテナ設定ガイド,pending,,high,,,2,,TASK-022,README.md更新
-TASK-024,E2Eテストサンプル作成,pytest + localstack を使用した E2E テスト。ローカル→AWS 両環境で同一テストケース実行,pending,,medium,,,3,,TASK-023,pytest + localstack
-TASK-025,CI/CD設定サンプル作成,GitHub Actions による CI/CD 設定。ローカルテスト → AWS デプロイ の自動化フロー,pending,,medium,,,2,,TASK-024,GitHub Actions
+# Phase 4: 環境差分比較ドキュメント（完了）
+TASK-021,IAMロール・ポリシー定義,各サービス(S3 Vectors/Bedrock KB/AgentCore Memory/Neptune)へのアクセス用最小権限IAMポリシー定義。CDK実装例付き,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-020,docs/IAM_POLICIES.md
+TASK-022,環境差分比較マトリクス作成,ローカル vs AWS の差分マトリクス。エンドポイント/認証/設定/コスト/制限の比較表作成,completed,AI,critical,2026-01-01,2026-01-01,3,1,TASK-021,docs/ENVIRONMENT_COMPARISON.md
+TASK-023,環境切り替えガイド作成,ENVIRONMENT 環境変数による切り替え方法。config.py パターン・DI コンテナ設定ガイド,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-022,docs/ENVIRONMENT_COMPARISON.md (移行ガイドセクション)
+TASK-024,E2Eテストサンプル作成,pytest + localstack を使用した E2E テスト。ローカル→AWS 両環境で同一テストケース実行,completed,AI,medium,2026-01-01,2026-01-01,3,1,TASK-023,tests/conftest.py + tests/test_*.py
+TASK-025,CI/CD設定サンプル作成,GitHub Actions による CI/CD 設定。Lint/TypeCheck→ローカルテスト→AWS テスト(手動)の自動化フロー,completed,AI,medium,2026-01-01,2026-01-01,2,1,TASK-024,.github/workflows/ci.yml
