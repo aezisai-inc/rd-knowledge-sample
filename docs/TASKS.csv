@@ -36,5 +36,5 @@ TASK-034,Neptune削除・CDKリファクタ,Neptune Serverless を削除し Neo4
 TASK-035,Neo4j AuraDB 設計ドキュメント,Neo4j AuraDB の設計・セットアップ手順を文書化,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-034,docs/NEO4J_AURADB_DESIGN.md
 TASK-036,Neo4j AuraDB セットアップスクリプト,AuraDB インスタンス作成とSecrets Manager設定の自動化スクリプト,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-035,scripts/setup-neo4j-auradb.sh
 TASK-037,Neo4j 接続テストスクリプト,接続テストとサンプル操作の検証スクリプト,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-036,scripts/test-neo4j-connection.py
-TASK-038,CDK 再デプロイ,Storage/Compute/Frontend スタック再デプロイ,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-037,Neptune削除→Neo4j移行完了
-TASK-039,API 動作確認,Graph API エンドポイントの動作確認,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-038,EC2+Neo4j構成で動作確認完了
+TASK-038,CDK 再デプロイ,Storage/Compute/Frontend スタック再デプロイ,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-037,EC2+Neo4j構成でデプロイ完了
+TASK-039,API 動作確認,Graph API エンドポイントの動作確認,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-038,ノード作成・取得テスト成功
