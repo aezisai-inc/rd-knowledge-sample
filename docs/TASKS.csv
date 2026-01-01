@@ -31,3 +31,10 @@ TASK-026,環境設定・README整備,environments.ts + infra/README.md,completed
 TASK-031,環境差分比較ドキュメント,ローカル vs AWS の差分マトリクス作成,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-026,docs/ENVIRONMENT_COMPARISON.md
 TASK-032,IAMポリシードキュメント,各サービス用IAMポリシー定義（CDK実装例付き）,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-031,docs/IAM_POLICIES.md
 TASK-033,E2Eテスト実装,pytest による VectorStore/Memory/Graph テスト,completed,AI,medium,2026-01-01,2026-01-01,3,1,TASK-032,tests/
+# Phase 6: Neptune → Neo4j 移行（進行中）
+TASK-034,Neptune削除・CDKリファクタ,Neptune Serverless を削除し Neo4j AuraDB 対応に変更,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-033,storage-stack.ts/compute-stack.ts
+TASK-035,Neo4j AuraDB 設計ドキュメント,Neo4j AuraDB の設計・セットアップ手順を文書化,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-034,docs/NEO4J_AURADB_DESIGN.md
+TASK-036,Neo4j AuraDB インスタンス作成,AuraDB コンソールでインスタンス作成・設定,in_progress,AI,critical,2026-01-01,,1,,TASK-035,https://console.neo4j.io/
+TASK-037,Secrets Manager 設定,Neo4j 接続情報を Secrets Manager に登録,pending,AI,high,,,1,,TASK-036,aws secretsmanager put-secret-value
+TASK-038,CDK 再デプロイ,Storage/Compute/Frontend スタック再デプロイ,pending,AI,critical,,,2,,TASK-037,cdk deploy --all
+TASK-039,API 動作確認,Graph API エンドポイントの動作確認,pending,AI,high,,,1,,TASK-038,curl テスト
