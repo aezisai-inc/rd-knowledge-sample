@@ -90,7 +90,7 @@ export function ServiceCard({
           )}
         </button>
 
-        {result && (
+        {result !== null && (
           <div className="result-panel">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold text-slate-300">結果</span>
