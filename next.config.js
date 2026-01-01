@@ -8,7 +8,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_ENDPOINT:
       process.env.NEXT_PUBLIC_API_ENDPOINT ||
-      "https://tc3gjfcpf1.execute-api.ap-northeast-1.amazonaws.com/dev",
+      "https://s3pa7bz4o2.execute-api.ap-northeast-1.amazonaws.com/dev",
   },
 };
 

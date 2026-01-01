@@ -76,7 +76,7 @@ export default function Home() {
     }
   };
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "https://tc3gjfcpf1.execute-api.ap-northeast-1.amazonaws.com/dev";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "https://s3pa7bz4o2.execute-api.ap-northeast-1.amazonaws.com/dev";
 
   const handleTest = async (endpoint: string): Promise<unknown> => {
     // エンドポイントマッピング
