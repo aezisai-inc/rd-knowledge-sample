@@ -2,6 +2,8 @@
  * Compute Stack
  *
  * Lambda, API Gateway を定義
+ *
+ * グラフDB: Neptune → Neo4j AuraDB に移行
  */
 
 import * as cdk from "aws-cdk-lib";
@@ -39,7 +41,7 @@ export class ComputeStack extends cdk.Stack {
     const { config, storageStack } = props;
 
     // =========================================================================
-    // Lambda Security Group (VPC 内)
+    // Lambda Security Group
     // =========================================================================
     const lambdaSecurityGroup = new ec2.SecurityGroup(
       this,
@@ -60,7 +62,7 @@ export class ComputeStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName(
-          "service-role/AWSLambdaVPCAccessExecutionRole"
+          "service-role/AWSLambdaBasicExecutionRole"
         ),
       ],
     });
@@ -94,17 +96,12 @@ export class ComputeStack extends cdk.Stack {
       })
     );
 
-    // Neptune 権限
+    // Secrets Manager 権限 (Neo4j 接続情報)
     lambdaRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
-        actions: [
-          "neptune-db:connect",
-          "neptune-db:ReadDataViaQuery",
-          "neptune-db:WriteDataViaQuery",
-          "neptune-db:DeleteDataViaQuery",
-        ],
-        resources: [`arn:aws:neptune-db:${this.region}:${this.account}:*/*`],
+        actions: ["secretsmanager:GetSecretValue"],
+        resources: [storageStack.neo4jSecret.secretArn],
       })
     );
 
@@ -148,18 +145,10 @@ export class ComputeStack extends cdk.Stack {
       memorySize: config.lambda.memorySize,
       timeout: cdk.Duration.seconds(config.lambda.timeout),
       role: lambdaRole,
-      vpc: storageStack.vpc,
-      vpcSubnets: {
-        subnetType:
-          config.envName === "prod"
-            ? ec2.SubnetType.PRIVATE_WITH_EGRESS
-            : ec2.SubnetType.PRIVATE_ISOLATED,
-      },
-      securityGroups: [lambdaSecurityGroup],
       layers: [dependenciesLayer],
       environment: {
         ENVIRONMENT: config.envName,
-        NEPTUNE_ENDPOINT: storageStack.neptuneEndpoint,
+        NEO4J_SECRET_ARN: storageStack.neo4jSecret.secretArn,
         DATA_SOURCE_BUCKET: storageStack.dataSourceBucket.bucketName,
         LOG_LEVEL: config.envName === "prod" ? "INFO" : "DEBUG",
       },
@@ -205,18 +194,10 @@ export class ComputeStack extends cdk.Stack {
       memorySize: config.lambda.memorySize,
       timeout: cdk.Duration.seconds(config.lambda.timeout),
       role: lambdaRole,
-      vpc: storageStack.vpc,
-      vpcSubnets: {
-        subnetType:
-          config.envName === "prod"
-            ? ec2.SubnetType.PRIVATE_WITH_EGRESS
-            : ec2.SubnetType.PRIVATE_ISOLATED,
-      },
-      securityGroups: [lambdaSecurityGroup],
       layers: [dependenciesLayer],
       environment: {
         ENVIRONMENT: config.envName,
-        NEPTUNE_ENDPOINT: storageStack.neptuneEndpoint,
+        NEO4J_SECRET_ARN: storageStack.neo4jSecret.secretArn,
         LOG_LEVEL: config.envName === "prod" ? "INFO" : "DEBUG",
       },
       logRetention: logs.RetentionDays.TWO_WEEKS,
@@ -348,4 +329,3 @@ export class ComputeStack extends cdk.Stack {
     });
   }
 }
-

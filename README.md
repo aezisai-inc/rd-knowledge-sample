@@ -8,7 +8,7 @@
 - **Amazon S3 Vectors** - ベクトルストレージ
 - **Amazon Bedrock Knowledge Bases** - マネージドRAG
 - **AgentCore Memory** - エージェント記憶
-- **Neptune / Graphiti** - ナレッジグラフ
+- **Neo4j / Graphiti** - ナレッジグラフ（Neptune から移行）
 
 ---
 
@@ -28,7 +28,7 @@
 └───────┬───────┘    └───────┬───────┘    └───────┬───────┘
         │                    │                     │
         ▼                    ▼                     ▼
-  🧠 AgentCore        📚 Bedrock KB /          🕸️ Neptune /
+  🧠 AgentCore        📚 Bedrock KB /          🕸️ Neo4j /
      Memory           🗄️ S3 Vectors             Graphiti
 ```
 
@@ -39,8 +39,8 @@
 | 「前回の会話を覚えていてほしい」 | ユーザー体験の保持 | 🧠 **AgentCore Memory** |
 | 「PDF/動画を検索したい」 | ドキュメントRAG | 📚 **Bedrock KB** |
 | 「100万件のベクトルを安く保存したい」 | 大量ベクトル・コスト重視 | 🗄️ **S3 Vectors** |
-| 「エンティティ間の関係を表現したい」 | グラフ構造 | 🕸️ **Neptune** |
-| 「時間軸で関係性の変化を追跡したい」 | 双時間モデル | 🕸️ **Graphiti** |
+| 「エンティティ間の関係を表現したい」 | グラフ構造 | 🕸️ **Neo4j** |
+| 「時間軸で関係性の変化を追跡したい」 | 双時間モデル | 🕸️ **Neo4j + Graphiti** |
 
 ### 💰 コスト比較 (月額概算)
 
@@ -50,7 +50,7 @@
 | Bedrock KB + S3 Vectors | ~$50 | 10万ドキュメントRAG |
 | Bedrock KB + OpenSearch | ~$150+ | 高頻度・ハイブリッド検索 |
 | S3 Vectors (直接) | ~$5 | 低頻度・大量ベクトル |
-| Neptune Serverless | ~$30 | グラフクエリ |
+| Neo4j AuraDB | $0〜65 | グラフクエリ（Free Tier あり）|
 
 ---
 
@@ -92,7 +92,7 @@ bedrock_runtime.retrieve_and_generate(...)
 **特徴:**
 - フルマネージドRAGワークフロー
 - 自動: データ取り込み、チャンキング、エンベディング生成
-- バックエンドにS3 Vectors/OpenSearch/Neptune等を選択可能
+- バックエンドにS3 Vectors/OpenSearch/Neo4j等を選択可能
 - Retrieve/RetrieveAndGenerate API
 
 ## アーキテクチャ関係図
@@ -109,7 +109,7 @@ bedrock_runtime.retrieve_and_generate(...)
 ┌─────────────────────────────────────────────────────────────┐
 │                 Vector Store Backends                        │
 ├──────────┬──────────┬────────────┬────────────┬─────────────┤
-│ S3       │OpenSearch│ Aurora     │ Neptune    │ Pinecone    │
+│ S3       │OpenSearch│ Aurora     │ Neo4j      │ Pinecone    │
 │ Vectors  │Serverless│ PostgreSQL │ Analytics  │             │
 │ (低コスト)│(高性能)   │ (既存活用) │ (GraphRAG) │ (外部)      │
 └──────────┴──────────┴────────────┴────────────┴─────────────┘
@@ -188,7 +188,7 @@ uv run python src/05_agentcore_memory.py
 | コスト最優先、低頻度クエリ | S3 Vectors 直接 (`01_`) |
 | 標準的なRAGアプリ、開発効率重視 | Bedrock KB + S3 Vectors (`02_`) |
 | 高頻度クエリ、ハイブリッド検索 | Bedrock KB + OpenSearch (`03_`) |
-| グラフ構造が必要 | Neptune Analytics (別サンプル) |
+| グラフ構造が必要 | Neo4j + Graphiti |
 
 ## 🔄 ローカル vs AWS本番環境の比較
 
@@ -199,7 +199,7 @@ uv run python src/05_agentcore_memory.py
 | **S3 Vectors** | LocalStack / Mock | `boto3.client("s3vectors")` | エンドポイント設定 |
 | **Bedrock KB** | モック / Ollama | `boto3.client("bedrock-agent")` | 認証・モデルARN |
 | **AgentCore Memory** | SQLite / Redis | `boto3.client("bedrock-agentcore")` | IAMロール・リージョン |
-| **Neptune** | Neo4j (Docker) | Neptune Serverless | 接続文字列・認証 |
+| **Neo4j** | Neo4j (Docker) | Neo4j AuraDB | 接続URI・認証 |
 | **Graphiti** | Neo4j + Python | ECS + Neo4j EC2 | デプロイ構成 |
 
 ### 実装パターン
@@ -263,7 +263,8 @@ else:
 - [Amazon Bedrock AgentCore Memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html)
 - [Bedrock KB with S3 Vectors](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-vectors-bedrock-kb.html)
 - [OpenSearch Serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless.html)
-- [Amazon Neptune](https://docs.aws.amazon.com/neptune/latest/userguide/intro.html)
+- [Neo4j AuraDB](https://neo4j.com/cloud/aura/)
+- [Graphiti](https://github.com/getzep/graphiti)
 
 ### 本プロジェクト設計ドキュメント
 - [MEMORY_ARCHITECTURE_DESIGN.md](./MEMORY_ARCHITECTURE_DESIGN.md) - メモリアーキテクチャ完全ガイド（Zenn記事形式）
