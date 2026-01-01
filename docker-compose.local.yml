@@ -1,0 +1,183 @@
+# rd-knowledge-sample ローカル開発環境
+# 
+# Usage:
+#   docker-compose -f docker-compose.local.yml up -d
+#   docker-compose -f docker-compose.local.yml down
+#
+# Services:
+#   - LocalStack: AWS サービスエミュレーション (S3, DynamoDB, Lambda)
+#   - Neo4j: グラフデータベース (Neptune代替)
+#   - Redis: キャッシュ・セッションストア
+#   - ChromaDB: ローカルベクトルストア (S3 Vectors代替)
+#   - Ollama: ローカルLLM (Bedrock代替)
+
+version: "3.9"
+
+services:
+  # ==========================================================================
+  # LocalStack - AWS サービスエミュレーション
+  # ==========================================================================
+  localstack:
+    image: localstack/localstack:latest
+    container_name: rd-knowledge-localstack
+    ports:
+      - "4566:4566"      # LocalStack Gateway
+      - "4510-4559:4510-4559"  # 外部サービスポート範囲
+    environment:
+      - SERVICES=s3,dynamodb,lambda,sts,iam
+      - DEBUG=1
+      - PERSISTENCE=1
+      - AWS_DEFAULT_REGION=us-west-2
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - rd-knowledge-network
+
+  # ==========================================================================
+  # Neo4j - グラフデータベース (Neptune代替)
+  # ==========================================================================
+  neo4j:
+    image: neo4j:5-community
+    container_name: rd-knowledge-neo4j
+    ports:
+      - "7474:7474"   # HTTP (Browser)
+      - "7687:7687"   # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7474"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - rd-knowledge-network
+
+  # ==========================================================================
+  # Redis - キャッシュ・セッションストア
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: rd-knowledge-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rd-knowledge-network
+
+  # ==========================================================================
+  # ChromaDB - ローカルベクトルストア (S3 Vectors代替)
+  # ==========================================================================
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: rd-knowledge-chromadb
+    ports:
+      - "8000:8000"
+    environment:
+      - CHROMA_SERVER_AUTH_PROVIDER=
+      - ANONYMIZED_TELEMETRY=False
+      - ALLOW_RESET=True
+      - PERSIST_DIRECTORY=/chroma/data
+    volumes:
+      - chroma_data:/chroma/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rd-knowledge-network
+
+  # ==========================================================================
+  # Ollama - ローカルLLM (Bedrock代替)
+  # ==========================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rd-knowledge-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # 初回起動時にモデルをpull
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - rd-knowledge-network
+
+  # ==========================================================================
+  # Ollama Model Loader - モデル自動ダウンロード
+  # ==========================================================================
+  ollama-loader:
+    image: curlimages/curl:latest
+    container_name: rd-knowledge-ollama-loader
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        echo 'Pulling Ollama models...';
+        curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"llama3.2:1b\"}';
+        curl -X POST http://ollama:11434/api/pull -d '{\"name\": \"nomic-embed-text\"}';
+        echo 'Models loaded successfully!';
+      "
+    networks:
+      - rd-knowledge-network
+
+# ==========================================================================
+# ネットワーク
+# ==========================================================================
+networks:
+  rd-knowledge-network:
+    driver: bridge
+    name: rd-knowledge-network
+
+# ==========================================================================
+# ボリューム (永続化)
+# ==========================================================================
+volumes:
+  localstack_data:
+    name: rd-knowledge-localstack-data
+  neo4j_data:
+    name: rd-knowledge-neo4j-data
+  neo4j_logs:
+    name: rd-knowledge-neo4j-logs
+  redis_data:
+    name: rd-knowledge-redis-data
+  chroma_data:
+    name: rd-knowledge-chroma-data
+  ollama_data:
+    name: rd-knowledge-ollama-data
