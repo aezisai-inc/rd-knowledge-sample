@@ -76,41 +76,60 @@ export default function Home() {
     }
   };
 
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "https://tc3gjfcpf1.execute-api.ap-northeast-1.amazonaws.com/dev";
+
   const handleTest = async (endpoint: string): Promise<unknown> => {
-    // In real implementation, call the Lambda function via API Gateway
-    // For demo, return mock data
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    
-    const mockResponses: Record<string, unknown> = {
-      "/agentcore/create-memory": {
-        memoryId: "mem-demo-12345",
-        status: "ACTIVE",
-        strategies: ["SEMANTIC_MEMORY", "SUMMARY_MEMORY"],
+    // エンドポイントマッピング
+    const endpointMap: Record<string, { path: string; method: string; body?: object }> = {
+      "/agentcore/create-memory": { 
+        path: "/v1/memory", 
+        method: "POST",
+        body: { actorId: "demo-user", action: "create" }
       },
-      "/agentcore/create-event": {
-        eventId: "evt-demo-67890",
-        actorId: "user-123",
-        timestamp: new Date().toISOString(),
+      "/agentcore/create-event": { 
+        path: "/v1/memory", 
+        method: "POST",
+        body: { actorId: "demo-user", action: "event", content: "test event" }
       },
-      "/agentcore/retrieve": {
-        records: [],
-        message: "No records found (demo mode)",
+      "/agentcore/retrieve": { 
+        path: "/v1/memory?actorId=demo-user", 
+        method: "GET"
       },
-      "/bedrock-kb/retrieve": {
-        results: [
-          { content: "Sample document content...", score: 0.95 },
-          { content: "Another relevant document...", score: 0.87 },
-        ],
+      "/bedrock-kb/retrieve": { 
+        path: "/v1/vectors/query", 
+        method: "POST",
+        body: { query: "sample query", topK: 5 }
       },
-      "/s3-vectors/query": {
-        vectors: [
-          { key: "doc-001", score: 0.92, metadata: { source: "manual.pdf" } },
-          { key: "doc-002", score: 0.85, metadata: { source: "guide.pdf" } },
-        ],
+      "/s3-vectors/query": { 
+        path: "/v1/vectors/query", 
+        method: "POST",
+        body: { query: "sample query", topK: 5 }
       },
     };
 
-    return mockResponses[endpoint] || { error: "Unknown endpoint" };
+    const config = endpointMap[endpoint];
+    if (!config) {
+      return { error: "Unknown endpoint" };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${config.path}`, {
+        method: config.method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: config.body ? JSON.stringify(config.body) : undefined,
+      });
+
+      if (!response.ok) {
+        return { error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("API call failed:", error);
+      return { error: `API Error: ${error instanceof Error ? error.message : "Unknown error"}` };
+    }
   };
 
   const getServiceAvailability = (relatedServices: string[]): boolean | null => {

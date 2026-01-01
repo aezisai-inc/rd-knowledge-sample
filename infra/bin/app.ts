@@ -13,6 +13,7 @@ import * as cdk from "aws-cdk-lib";
 import { StorageStack } from "../lib/stacks/storage-stack";
 import { ComputeStack } from "../lib/stacks/compute-stack";
 import { PipelineStack } from "../lib/stacks/pipeline-stack";
+import { FrontendStack } from "../lib/stacks/frontend-stack";
 import { getEnvironmentConfig } from "../lib/config/environments";
 
 const app = new cdk.App();
@@ -55,6 +56,19 @@ const computeStack = new ComputeStack(app, `RdKnowledge-Compute-${envName}`, {
 });
 
 computeStack.addDependency(storageStack);
+
+// =============================================================================
+// Frontend Stack (S3 + CloudFront)
+// =============================================================================
+const frontendStack = new FrontendStack(app, `RdKnowledge-Frontend-${envName}`, {
+  env,
+  tags,
+  envName,
+  apiEndpoint: computeStack.apiEndpoint,
+  description: "rd-knowledge-sample Frontend (S3 + CloudFront)",
+});
+
+frontendStack.addDependency(computeStack);
 
 // =============================================================================
 // Pipeline Stack (CI/CD)

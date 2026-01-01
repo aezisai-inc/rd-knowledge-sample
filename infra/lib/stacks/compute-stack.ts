@@ -30,6 +30,8 @@ export class ComputeStack extends cdk.Stack {
   public readonly graphApiLambda: lambda.Function;
   /** API Gateway */
   public readonly api: apigateway.RestApi;
+  /** API Gateway endpoint URL */
+  public readonly apiEndpoint: string;
 
   constructor(scope: Construct, id: string, props: ComputeStackProps) {
     super(scope, id, props);
@@ -240,6 +242,9 @@ export class ComputeStack extends cdk.Stack {
         allowHeaders: ["Content-Type", "Authorization", "X-Amz-Date"],
       },
     });
+
+    // API Endpoint URL を公開
+    this.apiEndpoint = this.api.url;
 
     // API リソース定義
     const v1 = this.api.root.addResource("v1");
