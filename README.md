@@ -2,7 +2,13 @@
 
 ## 目的
 
-**Amazon S3 Vectors**、**Amazon Bedrock Knowledge Bases**、**AgentCore Memory**、**Neptune/Graphiti** の違いを検証し、AIエージェント開発における適切な採用判断基準を確立する。
+**ローカル環境とAWS本番環境の差分を明確にし、サンプル実装で比較できるようにする。**
+
+対象サービス:
+- **Amazon S3 Vectors** - ベクトルストレージ
+- **Amazon Bedrock Knowledge Bases** - マネージドRAG
+- **AgentCore Memory** - エージェント記憶
+- **Neptune / Graphiti** - ナレッジグラフ
 
 ---
 
@@ -184,38 +190,60 @@ uv run python src/05_agentcore_memory.py
 | 高頻度クエリ、ハイブリッド検索 | Bedrock KB + OpenSearch (`03_`) |
 | グラフ構造が必要 | Neptune Analytics (別サンプル) |
 
-## Learning Achievement Coach への適用
+## 🔄 ローカル vs AWS本番環境の比較
 
-### 推奨構成
+### 環境差分マトリクス
+
+| サービス | ローカル環境 | AWS本番環境 | 差分ポイント |
+|---------|-------------|-------------|-------------|
+| **S3 Vectors** | LocalStack / Mock | `boto3.client("s3vectors")` | エンドポイント設定 |
+| **Bedrock KB** | モック / Ollama | `boto3.client("bedrock-agent")` | 認証・モデルARN |
+| **AgentCore Memory** | SQLite / Redis | `boto3.client("bedrock-agentcore")` | IAMロール・リージョン |
+| **Neptune** | Neo4j (Docker) | Neptune Serverless | 接続文字列・認証 |
+| **Graphiti** | Neo4j + Python | ECS + Neo4j EC2 | デプロイ構成 |
+
+### 実装パターン
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                   Learning Achievement Coach                  │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  教育コンテンツRAG ──► Bedrock KB + S3 Vectors (低コスト)     │
-│                                                              │
-│  スキル関係グラフ ──► Neptune Serverless (GraphRAG)          │
-│                                                              │
-│  ユーザー対話履歴 ──► AgentCore Memory (マネージド)          │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        環境抽象化レイヤー                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   src/adapters/                                                 │
+│   ├── local/           # ローカル実装                           │
+│   │   ├── vector_store.py    # LocalStack / In-memory          │
+│   │   ├── knowledge_base.py  # Ollama / Mock                   │
+│   │   └── memory.py          # SQLite / Redis                  │
+│   │                                                             │
+│   └── aws/             # AWS本番実装                            │
+│       ├── vector_store.py    # S3 Vectors                      │
+│       ├── knowledge_base.py  # Bedrock KB                      │
+│       └── memory.py          # AgentCore Memory                │
+│                                                                 │
+│   src/interfaces/      # 共通インターフェース                    │
+│   └── storage.py       # Protocol定義                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### 理由
+### 環境切り替え
 
-1. **Bedrock KB + S3 Vectors**: 教育コンテンツの検索に最適（低頻度クエリ、大量データ）
-2. **Neptune**: スキル・学習パス間の関係性を表現（グラフ構造必須）
-3. **AgentCore Memory**: ユーザーごとのコンテキスト保持（エピソード記憶）
+```python
+# 環境変数で切り替え
+import os
+from src.adapters import local, aws
 
-### コスト概算 (月額)
+ENV = os.getenv("ENVIRONMENT", "local")
 
-| コンポーネント | 想定 | 月額概算 |
-|----------------|------|----------|
-| Bedrock KB + S3 Vectors | 10万ドキュメント | ~$50 |
-| Neptune Serverless | 低頻度利用 | ~$30 |
-| AgentCore Memory | 1000ユーザー | ~$20 |
-| **合計** | | **~$100/月** |
+if ENV == "local":
+    vector_store = local.VectorStore()
+    knowledge_base = local.KnowledgeBase()
+    memory = local.Memory()
+else:
+    vector_store = aws.VectorStore()
+    knowledge_base = aws.KnowledgeBase()
+    memory = aws.Memory()
+```
 
 ## 注意事項
 
