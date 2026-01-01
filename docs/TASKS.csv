@@ -1,30 +1,33 @@
 id,name,description,status,assignee,priority,started_at,completed_at,estimated_hours,actual_hours,depends_on,notes
 # Phase 1: 基礎検証（完了）
-TASK-001,S3 Vectors サンプル実装,boto3 s3vectors クライアントを使用した直接ベクトル操作サンプル。create_vector_bucket/create_index/put_vectors/query_vectors の基本フロー実装,completed,AI,high,2024-12-25,2024-12-25,2,1,,01_s3_vectors_direct.py
-TASK-002,Bedrock KB + S3 Vectors サンプル実装,Bedrock Knowledge Base を S3 Vectors バックエンドで構築。CreateKnowledgeBase/CreateDataSource/StartIngestionJob/Retrieve API の実装,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-001,02_bedrock_kb_with_s3vectors.py
-TASK-003,Bedrock KB + OpenSearch サンプル実装,Bedrock Knowledge Base を OpenSearch Serverless バックエンドで構築。高頻度クエリ・ハイブリッド検索対応の実装,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-002,03_bedrock_kb_with_opensearch.py
-TASK-004,AgentCore Memory サンプル実装,bedrock-agentcore-control/bedrock-agentcore クライアントを使用。create_memory/create_event/retrieve_memory_records + memoryStrategies 設定,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-002,05_agentcore_memory.py
-TASK-005,機能・コスト比較表作成,S3 Vectors/Bedrock KB/AgentCore Memory/Neptune の機能・コスト・ユースケース比較表を Python で出力,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-004,04_comparison.py
-TASK-006,メモリアーキテクチャ設計ドキュメント作成,AgentCore Memory の4種メモリタイプ(Short-term/Episodic/Semantic/Reflections)と連携パターンをZenn記事形式で解説,completed,AI,critical,2024-12-25,2024-12-25,4,2,TASK-005,MEMORY_ARCHITECTURE_DESIGN.md
-TASK-007,Graphiti統合設計ドキュメント作成,Graphiti(時間認識型ナレッジグラフ)とNeptuneの比較。双時間モデル・ハイブリッド検索・LLM自動抽出の設計,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-006,GRAPHITI_INTEGRATION_DESIGN.md
-TASK-008,採用判断ガイド追加,「何を保存したいか？」で選ぶ採用判断フローチャート。会話履歴→AgentCore/ドキュメント→Bedrock KB/関係→Neptune,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-007,README.md更新
-TASK-009,ARIA経験同期ファイル作成,検証結果をARIA標準リポジトリに経験ファイルとして同期,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-008,well-known#58 cursor-rules#64
-TASK-010,Amplify Gen2 UI機能追加,Next.js + Amplify Gen2 による Memory API 検証 UI 構築。SSR対応・Lambda関数連携,completed,AI,high,2024-12-25,2024-12-25,4,2,TASK-009,Next.js + Amplify Gen2統合
+TASK-001,S3 Vectors サンプル実装,boto3 s3vectors クライアントを使用した直接ベクトル操作サンプル,completed,AI,high,2024-12-25,2024-12-25,2,1,,01_s3_vectors_direct.py
+TASK-002,Bedrock KB + S3 Vectors サンプル実装,Bedrock Knowledge Base を S3 Vectors バックエンドで構築,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-001,02_bedrock_kb_with_s3vectors.py
+TASK-003,Bedrock KB + OpenSearch サンプル実装,Bedrock Knowledge Base を OpenSearch Serverless バックエンドで構築,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-002,03_bedrock_kb_with_opensearch.py
+TASK-004,AgentCore Memory サンプル実装,bedrock-agentcore クライアントを使用した Memory API 実装,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-002,05_agentcore_memory.py
+TASK-005,機能・コスト比較表作成,S3 Vectors/Bedrock KB/AgentCore Memory/Neptune の比較表作成,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-004,04_comparison.py
+TASK-006,メモリアーキテクチャ設計ドキュメント,AgentCore Memory の4種メモリタイプと連携パターンを解説,completed,AI,critical,2024-12-25,2024-12-25,4,2,TASK-005,MEMORY_ARCHITECTURE_DESIGN.md
+TASK-007,Graphiti統合設計ドキュメント,Graphiti(時間認識型ナレッジグラフ)とNeptuneの比較,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-006,GRAPHITI_INTEGRATION_DESIGN.md
+TASK-008,採用判断ガイド追加,「何を保存したいか？」で選ぶ採用判断フローチャート,completed,AI,high,2024-12-25,2024-12-25,2,1,TASK-007,README.md更新
 # Phase 2: ローカル環境サンプル実装（完了）
-TASK-011,共通インターフェース(Protocol)定義,Python Protocol で VectorStore/KnowledgeBase/Memory/Graph の共通インターフェース定義。環境非依存の抽象化層,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-010,src/interfaces/storage.py
-TASK-012,ローカル VectorStore アダプタ実装,FAISS/In-memory + NumPy による VectorStore Protocol 実装。put_vectors/query_vectors/cosine_similarity 対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/vector_store.py
-TASK-013,ローカル KnowledgeBase アダプタ実装,Ollama + In-memory/ChromaDB による KnowledgeBase Protocol 実装。retrieve/retrieve_and_generate(簡易RAG)対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/knowledge_base.py
-TASK-014,ローカル Memory アダプタ実装,SQLite による Memory Protocol 実装。create_event/retrieve_records/get_session_history + 埋め込みベース検索対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/memory_store.py
-TASK-015,ローカル Graph アダプタ実装,Neo4j Docker または In-memory による Graph Protocol 実装。Cypher クエリ・BFS パス検索対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/graph_store.py
-TASK-016,docker-compose.local.yml 作成,LocalStack + Neo4j + Redis + Ollama + ChromaDB の統合 Docker Compose 環境。ヘルスチェック・ボリューム永続化・モデル自動DL,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-012,docker-compose.local.yml
+TASK-011,共通インターフェース(Protocol)定義,VectorStore/KnowledgeBase/Memory/Graph の Protocol 定義,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-008,src/interfaces/storage.py
+TASK-012,ローカル VectorStore アダプタ,In-memory + NumPy による VectorStore 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/vector_store.py
+TASK-013,ローカル KnowledgeBase アダプタ,Ollama + ChromaDB による簡易RAG実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/knowledge_base.py
+TASK-014,ローカル Memory アダプタ,SQLite による Memory Protocol 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/memory_store.py
+TASK-015,ローカル Graph アダプタ,NetworkX による Graph Protocol 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-011,src/adapters/local/graph_store.py
+TASK-016,docker-compose.local.yml,LocalStack + Neo4j + Redis + ChromaDB + Ollama 環境,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-012,docker-compose.local.yml
 # Phase 3: AWS本番環境サンプル実装（完了）
-TASK-017,AWS VectorStore アダプタ実装,boto3 s3vectors による VectorStore Protocol 実装。IAM認証・リージョン設定・埋め込み生成ヘルパー対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/vector_store.py
-TASK-018,AWS KnowledgeBase アダプタ実装,boto3 bedrock-agent/bedrock-agent-runtime による KnowledgeBase Protocol 実装。Retrieve/RetrieveAndGenerate API対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/knowledge_base.py
-TASK-019,AWS Memory アダプタ実装,boto3 bedrock-agentcore による Memory Protocol 実装。create_event/retrieve_records/memoryStrategies対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/memory_store.py
-TASK-020,AWS Graph アダプタ実装,Neptune Serverless + Gremlin による Graph Protocol 実装。Gremlin クエリ・パス検索対応,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/graph_store.py
-# Phase 4: 環境差分比較ドキュメント（完了）
-TASK-021,IAMロール・ポリシー定義,各サービス(S3 Vectors/Bedrock KB/AgentCore Memory/Neptune)へのアクセス用最小権限IAMポリシー定義。CDK実装例付き,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-020,docs/IAM_POLICIES.md
-TASK-022,環境差分比較マトリクス作成,ローカル vs AWS の差分マトリクス。エンドポイント/認証/設定/コスト/制限の比較表作成,completed,AI,critical,2026-01-01,2026-01-01,3,1,TASK-021,docs/ENVIRONMENT_COMPARISON.md
-TASK-023,環境切り替えガイド作成,ENVIRONMENT 環境変数による切り替え方法。config.py パターン・DI コンテナ設定ガイド,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-022,docs/ENVIRONMENT_COMPARISON.md (移行ガイドセクション)
-TASK-024,E2Eテストサンプル作成,pytest + localstack を使用した E2E テスト。ローカル→AWS 両環境で同一テストケース実行,completed,AI,medium,2026-01-01,2026-01-01,3,1,TASK-023,tests/conftest.py + tests/test_*.py
-TASK-025,CI/CD設定サンプル作成,GitHub Actions による CI/CD 設定。Lint/TypeCheck→ローカルテスト→AWS テスト(手動)の自動化フロー,completed,AI,medium,2026-01-01,2026-01-01,2,1,TASK-024,.github/workflows/ci.yml
+TASK-017,AWS VectorStore アダプタ,boto3 s3vectors による VectorStore 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/vector_store.py
+TASK-018,AWS KnowledgeBase アダプタ,boto3 bedrock-agent による KnowledgeBase 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/knowledge_base.py
+TASK-019,AWS Memory アダプタ,boto3 bedrock-agentcore による Memory 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/memory_store.py
+TASK-020,AWS Graph アダプタ,Neptune Serverless + Gremlin による Graph 実装,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-016,src/adapters/aws/graph_store.py
+# Phase 4: CDK インフラストラクチャ（完了）
+TASK-021,CDKプロジェクト構造作成,infra/ に CDK TypeScript プロジェクト構築,completed,AI,critical,2026-01-01,2026-01-01,3,1,TASK-020,infra/
+TASK-022,StorageStack実装,S3 DataSource + Neptune Serverless + VPC 定義,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-021,infra/lib/stacks/storage-stack.ts
+TASK-023,ComputeStack実装,Lambda (Memory/Vector/Graph API) + API Gateway 定義,completed,AI,high,2026-01-01,2026-01-01,3,1,TASK-022,infra/lib/stacks/compute-stack.ts
+TASK-024,PipelineStack実装,CodePipeline + CodeBuild による CI/CD 定義,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-023,infra/lib/stacks/pipeline-stack.ts
+TASK-025,Lambda ハンドラー実装,Memory/Vector/Graph API の Lambda ハンドラー,completed,AI,high,2026-01-01,2026-01-01,3,1,TASK-024,infra/lambda/
+TASK-026,環境設定・README整備,environments.ts + infra/README.md,completed,AI,medium,2026-01-01,2026-01-01,1,1,TASK-025,infra/lib/config/environments.ts
+# Phase 5: ドキュメント・テスト（完了）
+TASK-031,環境差分比較ドキュメント,ローカル vs AWS の差分マトリクス作成,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-026,docs/ENVIRONMENT_COMPARISON.md
+TASK-032,IAMポリシードキュメント,各サービス用IAMポリシー定義（CDK実装例付き）,completed,AI,high,2026-01-01,2026-01-01,2,1,TASK-031,docs/IAM_POLICIES.md
+TASK-033,E2Eテスト実装,pytest による VectorStore/Memory/Graph テスト,completed,AI,medium,2026-01-01,2026-01-01,3,1,TASK-032,tests/
