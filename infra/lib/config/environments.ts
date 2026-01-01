@@ -49,7 +49,7 @@ const environments: Record<string, EnvironmentConfig> = {
     enablePipeline: false,
     neptune: {
       minCapacity: 1,
-      maxCapacity: 2,
+      maxCapacity: 2.5,
     },
     lambda: {
       memorySize: 256,
@@ -66,7 +66,7 @@ const environments: Record<string, EnvironmentConfig> = {
     region: "us-west-2",
     enablePipeline: true,
     neptune: {
-      minCapacity: 2,
+      minCapacity: 2.5,
       maxCapacity: 4,
     },
     lambda: {
@@ -89,7 +89,7 @@ const environments: Record<string, EnvironmentConfig> = {
     region: "us-west-2",
     enablePipeline: true,
     neptune: {
-      minCapacity: 2,
+      minCapacity: 2.5,
       maxCapacity: 8,
     },
     lambda: {
