@@ -59,8 +59,8 @@ TASK-060,ダッシュボード設計,3テストケース切り替えUIの設計,
 TASK-061,タブ切り替え実装,Memory/Multimodal/Voice タブ切り替え,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-060,app/page.tsx 更新
 TASK-062,テスト履歴機能,実行履歴の保存・閲覧機能,completed,AI,medium,2026-01-02,2026-01-02,3,1,TASK-061,TestHistory.tsx (LocalStorage)
 TASK-063,結果比較機能,複数テスト結果の並列表示・比較,completed,AI,medium,2026-01-02,2026-01-02,2,1,TASK-062,ResultComparison.tsx
-# Phase 10: E2Eテスト・ドキュメント（未着手）
-TASK-070,Multimodal E2Eテスト,pytest による画像/動画処理テスト,pending,AI,high,,,3,,TASK-046,tests/test_multimodal.py
-TASK-071,Voice E2Eテスト,pytest による音声対話テスト,pending,AI,high,,,3,,TASK-056,tests/test_voice.py
-TASK-072,統合E2Eテスト,全3テストケースの統合テスト,pending,AI,critical,,,4,,TASK-070;TASK-071,tests/test_integration.py
-TASK-073,完成ドキュメント,プロジェクト完了レポート・知見まとめ,pending,AI,high,,,3,,TASK-072,docs/COMPLETION_REPORT.md
+# Phase 10: E2Eテスト・ドキュメント（完了）
+TASK-070,Multimodal E2Eテスト,pytest による画像/動画処理テスト,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-046,tests/test_multimodal.py
+TASK-071,Voice E2Eテスト,pytest による音声対話テスト,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-056,tests/test_voice.py
+TASK-072,統合E2Eテスト,全3テストケースの統合テスト,completed,AI,critical,2026-01-02,2026-01-02,4,1,TASK-070;TASK-071,tests/test_integration.py
+TASK-073,完成ドキュメント,プロジェクト完了レポート・知見まとめ,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-072,docs/COMPLETION_REPORT.md
