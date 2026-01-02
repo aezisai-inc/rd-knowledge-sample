@@ -15,6 +15,7 @@ dependencies = [
     # StrandsAgents + AgentCore (Agentic AI 基盤)
     "strands-agents>=1.0.0",
     "strands-agents-tools>=0.1.0",
+    "bedrock-agentcore>=0.1.0",
     
     # Graph Database (Neo4j)
     "neo4j>=5.0.0",

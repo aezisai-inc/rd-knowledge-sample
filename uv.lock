@@ -245,6 +245,25 @@ wheels = [
 ]
 
 [[package]]
+name = "bedrock-agentcore"
+version = "1.1.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "boto3" },
+    { name = "botocore" },
+    { name = "pydantic" },
+    { name = "starlette" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+    { name = "uvicorn" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/cc/aacc1d79e749b65f0ead598bb2e9d7663e66d5c00757dd12d86fffbc05f6/bedrock_agentcore-1.1.2.tar.gz", hash = "sha256:d19a18579ced821578ad8ba1d36c0425510dfe044ce87fadadfede3b3aca23b0", size = 397471, upload-time = "2025-12-26T21:57:51.269Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/74/89c82cc105fc91b3824eb4d82c73d1fe76a6375280c1bfd79cb2e2fd1431/bedrock_agentcore-1.1.2-py3-none-any.whl", hash = "sha256:e2070eecdb31ab177f78db9e1de7ed52c2c627667502f7384b7bf10afdbe6c2e", size = 113262, upload-time = "2025-12-26T21:57:49.767Z" },
+]
+
+[[package]]
 name = "boto3"
 version = "1.42.16"
 source = { registry = "https://pypi.org/simple" }
@@ -2384,6 +2403,7 @@ name = "rd-knowledge-sample"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bedrock-agentcore" },
     { name = "boto3" },
     { name = "botocore" },
     { name = "chromadb" },
@@ -2418,6 +2438,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bedrock-agentcore", specifier = ">=0.1.0" },
     { name = "boto3", specifier = ">=1.35.0" },
     { name = "botocore", specifier = ">=1.35.0" },
     { name = "chromadb", specifier = ">=0.5.0" },

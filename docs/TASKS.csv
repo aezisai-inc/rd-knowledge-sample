@@ -43,7 +43,7 @@ TASK-040,Nova Multimodal 調査・設計,StrandsAgents+AgentCore アーキテク
 TASK-041,StrandsAgents Multimodal Agent,マルチモーダル対応 Agent 定義（Nova Pro）,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-040,src/agents/multimodal_agent.py
 TASK-042,Image Generate Tool,Nova Canvas Tool 実装,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-041,src/agents/tools/image_generate.py
 TASK-043,Video Generate Tool,Nova Reel Tool 実装,completed,AI,medium,2026-01-02,2026-01-02,2,1,TASK-042,src/agents/tools/video_generate.py
-TASK-044,AgentCore Memory 統合,セッション記憶・長期記憶の統合,pending,AI,high,,,2,,TASK-043,src/agents/config.py
+TASK-044,AgentCore Memory 統合,セッション記憶・長期記憶の統合,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-043,src/agents/config.py
 TASK-045,AgentCore Runtime デプロイ,CDK + AgentCore SDK 設定,pending,AI,high,,,3,,TASK-044,infra/lib/stacks/agentcore-stack.ts
 TASK-046,Multimodal UI 実装,画像/動画アップロード・表示コンポーネント,pending,AI,high,,,4,,TASK-045,app/components/Multimodal/
 # Phase 8: Voice Dialogue テストケース（未着手）
