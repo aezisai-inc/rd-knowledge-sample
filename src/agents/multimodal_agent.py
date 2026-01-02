@@ -22,9 +22,13 @@ from typing import TYPE_CHECKING, Any
 from strands import Agent
 from strands.models import BedrockModel
 
+from .config import create_session_manager
 from .tools import image_generate, video_generate
 
 if TYPE_CHECKING:
+    from bedrock_agentcore.memory.integrations.strands.session_manager import (
+        AgentCoreMemorySessionManager,
+    )
     from strands.types import AgentResponse
 
 logger = logging.getLogger(__name__)
@@ -44,6 +48,7 @@ class MultimodalConfig:
 
     # AgentCore Memory
     memory_id: str = field(default_factory=lambda: os.environ.get("AGENTCORE_MEMORY_ID", ""))
+    use_memory: bool = field(default_factory=lambda: os.environ.get("USE_AGENTCORE_MEMORY", "true").lower() == "true")
 
     # S3
     output_bucket: str = field(
@@ -91,17 +96,29 @@ class MultimodalAgent:
     Features:
     - Nova Pro によるマルチモーダル理解（画像・動画）
     - Nova Canvas / Reel による生成（Tool 経由）
-    - AgentCore Memory による記憶管理
-    - AgentCore Observability による追跡
+    - AgentCore Memory による記憶管理（セッション要約、嗜好学習、事実抽出）
+    - AgentCore Observability による追跡（CloudTrail 連携）
     """
 
-    def __init__(self, config: MultimodalConfig | None = None):
+    def __init__(
+        self,
+        config: MultimodalConfig | None = None,
+        session_manager: AgentCoreMemorySessionManager | None = None,
+        actor_id: str = "",
+        session_id: str = "",
+    ):
         """
         Args:
             config: エージェント設定（省略時はデフォルト設定）
+            session_manager: AgentCore Memory セッションマネージャ（省略時は自動作成）
+            actor_id: アクターID（session_manager 省略時に使用）
+            session_id: セッションID（session_manager 省略時に使用）
         """
         self.config = config or MultimodalConfig()
         self._agent: Agent | None = None
+        self._session_manager = session_manager
+        self._actor_id = actor_id
+        self._session_id = session_id
         self._initialize()
 
     def _initialize(self) -> None:
@@ -118,16 +135,30 @@ class MultimodalAgent:
             video_generate,
         ]
 
+        # AgentCore Memory SessionManager
+        session_manager = None
+        if self.config.use_memory:
+            try:
+                session_manager = self._session_manager or create_session_manager(
+                    actor_id=self._actor_id,
+                    session_id=self._session_id,
+                )
+                logger.info("AgentCore Memory enabled")
+            except Exception as e:
+                logger.warning(f"Failed to initialize AgentCore Memory: {e}")
+                session_manager = None
+
         # Agent
         self._agent = Agent(
             model=model,
             system_prompt=SYSTEM_PROMPT,
             tools=tools,
+            session_manager=session_manager,
         )
 
         logger.info(
             f"MultimodalAgent initialized: model={self.config.model_id}, "
-            f"region={self.config.region}"
+            f"region={self.config.region}, memory={'enabled' if session_manager else 'disabled'}"
         )
 
     @property
