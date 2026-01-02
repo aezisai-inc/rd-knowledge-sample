@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ServiceCard } from "./components/ServiceCard";
 import { MultimodalTester } from "./components/Multimodal";
 import { VoiceDialogueTester } from "./components/Voice";
+import { TestHistory, ResultComparison, type TestResult } from "./components/Dashboard";
 
 interface ServiceStatus {
   service: string;
@@ -51,6 +52,25 @@ export default function Home() {
   const [serviceStatus, setServiceStatus] = useState<Record<string, boolean | null>>({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>("memory");
+  const [comparisonResults, setComparisonResults] = useState<TestResult[]>([]);
+  const [showDashboard, setShowDashboard] = useState(false);
+
+  const handleSelectResult = (result: TestResult) => {
+    setComparisonResults((prev) => {
+      // Limit to 4 results for comparison
+      if (prev.some((r) => r.id === result.id)) {
+        return prev.filter((r) => r.id !== result.id);
+      }
+      if (prev.length >= 4) {
+        return [...prev.slice(1), result];
+      }
+      return [...prev, result];
+    });
+  };
+
+  const clearComparison = () => {
+    setComparisonResults([]);
+  };
 
   useEffect(() => {
     checkAvailability();
@@ -172,18 +192,30 @@ export default function Home() {
     <main className="min-h-screen p-8">
       {/* Header */}
       <header className="max-w-6xl mx-auto mb-12 animate-fade-in-up">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-2xl">
-            🔬
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center text-2xl">
+              🔬
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
+                AWS Nova テストダッシュボード
+              </h1>
+              <p className="text-slate-400">
+                Memory / Multimodal / Voice の技術検証
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-              Memory Architecture Tester
-            </h1>
-            <p className="text-slate-400">
-              AWS メモリサービスの動作検証・比較ツール
-            </p>
-          </div>
+          <button
+            onClick={() => setShowDashboard(!showDashboard)}
+            className={`px-4 py-2 rounded-lg transition-all ${
+              showDashboard
+                ? "bg-violet-500 text-white"
+                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+            }`}
+          >
+            📊 {showDashboard ? "ダッシュボード非表示" : "ダッシュボード表示"}
+          </button>
         </div>
 
         {/* Tab Navigation */}
@@ -191,7 +223,7 @@ export default function Home() {
           {[
             { id: "memory" as TabId, label: "Memory", icon: "🧠", description: "AgentCore Memory テスト" },
             { id: "multimodal" as TabId, label: "Multimodal", icon: "🌈", description: "Nova Vision/Canvas/Reel" },
-            { id: "voice" as TabId, label: "Voice", icon: "🎙️", description: "音声対話 (Coming Soon)" },
+            { id: "voice" as TabId, label: "Voice", icon: "🎙️", description: "Nova Sonic 音声対話" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -275,10 +307,18 @@ export default function Home() {
         )}
       </div>
 
+      {/* Dashboard Section */}
+      {showDashboard && (
+        <div className="max-w-6xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TestHistory onSelectResult={handleSelectResult} />
+          <ResultComparison results={comparisonResults} onClear={clearComparison} />
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="max-w-6xl mx-auto mt-12 pt-8 border-t border-slate-800">
         <div className="flex items-center justify-between text-sm text-slate-500">
-          <p>rd-knowledge-sample | Amplify Gen2</p>
+          <p>rd-knowledge-sample | AWS Nova Series 技術検証</p>
           <div className="flex items-center gap-4">
             <button
               onClick={checkAvailability}

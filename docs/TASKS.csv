@@ -54,11 +54,11 @@ TASK-053,Voice UI コンポーネント,マイク入力・会話表示・音声�
 TASK-054,Voice UI 統合,ページ統合とタブ切り替え対応,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-053,app/page.tsx 更新
 TASK-055,Voice Settings UI,音声/言語選択・設定 UI,completed,AI,high,2026-01-02,2026-01-02,1,1,TASK-054,VoiceDialogueTester.tsx
 TASK-056,Voice 統合テスト準備,E2E テスト用準備,completed,AI,high,2026-01-02,2026-01-02,1,1,TASK-055,フロントエンド統合完了
-# Phase 9: 管理画面UI統合（未着手）
-TASK-060,ダッシュボード設計,3テストケース切り替えUIの設計,pending,AI,high,,,2,,TASK-046;TASK-056,docs/UI_DESIGN.md
-TASK-061,タブ切り替え実装,Memory/Multimodal/Voice タブ切り替え,pending,AI,high,,,3,,TASK-060,app/page.tsx 更新
-TASK-062,テスト履歴機能,実行履歴の保存・閲覧機能,pending,AI,medium,,,3,,TASK-061,LocalStorage / DynamoDB
-TASK-063,結果比較機能,複数テスト結果の並列表示・比較,pending,AI,medium,,,2,,TASK-062,レスポンス比較UI
+# Phase 9: 管理画面UI統合（完了）
+TASK-060,ダッシュボード設計,3テストケース切り替えUIの設計,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-046;TASK-056,タブナビゲーション実装済み
+TASK-061,タブ切り替え実装,Memory/Multimodal/Voice タブ切り替え,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-060,app/page.tsx 更新
+TASK-062,テスト履歴機能,実行履歴の保存・閲覧機能,completed,AI,medium,2026-01-02,2026-01-02,3,1,TASK-061,TestHistory.tsx (LocalStorage)
+TASK-063,結果比較機能,複数テスト結果の並列表示・比較,completed,AI,medium,2026-01-02,2026-01-02,2,1,TASK-062,ResultComparison.tsx
 # Phase 10: E2Eテスト・ドキュメント（未着手）
 TASK-070,Multimodal E2Eテスト,pytest による画像/動画処理テスト,pending,AI,high,,,3,,TASK-046,tests/test_multimodal.py
 TASK-071,Voice E2Eテスト,pytest による音声対話テスト,pending,AI,high,,,3,,TASK-056,tests/test_voice.py
