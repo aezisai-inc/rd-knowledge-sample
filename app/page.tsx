@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ServiceCard } from "./components/ServiceCard";
+import { MultimodalTester } from "./components/Multimodal";
 
 interface ServiceStatus {
   service: string;
@@ -43,9 +44,12 @@ const SERVICES = [
   },
 ];
 
+type TabId = "memory" | "multimodal" | "voice";
+
 export default function Home() {
   const [serviceStatus, setServiceStatus] = useState<Record<string, boolean | null>>({});
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("memory");
 
   useEffect(() => {
     checkAvailability();
@@ -181,53 +185,98 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Decision flowchart summary */}
-        <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 mt-6">
-          <h2 className="text-lg font-semibold mb-4 text-slate-200">📋 採用判断クイックガイド</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🧠</span>
-              <div>
-                <p className="font-semibold text-white">AgentCore Memory</p>
-                <p className="text-slate-400">「前回の会話を覚えていてほしい」</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">📚</span>
-              <div>
-                <p className="font-semibold text-white">Bedrock KB</p>
-                <p className="text-slate-400">「PDF/動画を検索したい」</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">🗄️</span>
-              <div>
-                <p className="font-semibold text-white">S3 Vectors</p>
-                <p className="text-slate-400">「100万件を安く保存したい」</p>
-              </div>
-            </div>
-          </div>
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mt-6 p-1 bg-slate-800/50 rounded-xl border border-slate-700/50">
+          {[
+            { id: "memory" as TabId, label: "Memory", icon: "🧠", description: "AgentCore Memory テスト" },
+            { id: "multimodal" as TabId, label: "Multimodal", icon: "🌈", description: "Nova Vision/Canvas/Reel" },
+            { id: "voice" as TabId, label: "Voice", icon: "🎙️", description: "音声対話 (Coming Soon)" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? "bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-lg"
+                  : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+              }`}
+            >
+              <span className="text-lg mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
       </header>
 
-      {/* Service Cards */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {SERVICES.map((service, index) => (
-          <div
-            key={service.id}
-            className={`animate-fade-in-up delay-${(index + 1) * 100}`}
-            style={{ opacity: 0 }}
-          >
-            <ServiceCard
-              title={service.title}
-              description={service.description}
-              icon={service.icon}
-              available={getServiceAvailability(service.relatedServices)}
-              operations={service.operations}
-              onTest={handleTest}
-            />
+      {/* Tab Content */}
+      <div className="max-w-6xl mx-auto">
+        {/* Memory Tab */}
+        {activeTab === "memory" && (
+          <>
+            {/* Decision flowchart summary */}
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 mb-6">
+              <h2 className="text-lg font-semibold mb-4 text-slate-200">📋 採用判断クイックガイド</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🧠</span>
+                  <div>
+                    <p className="font-semibold text-white">AgentCore Memory</p>
+                    <p className="text-slate-400">「前回の会話を覚えていてほしい」</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">📚</span>
+                  <div>
+                    <p className="font-semibold text-white">Bedrock KB</p>
+                    <p className="text-slate-400">「PDF/動画を検索したい」</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">🗄️</span>
+                  <div>
+                    <p className="font-semibold text-white">S3 Vectors</p>
+                    <p className="text-slate-400">「100万件を安く保存したい」</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Service Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {SERVICES.map((service, index) => (
+                <div
+                  key={service.id}
+                  className={`animate-fade-in-up delay-${(index + 1) * 100}`}
+                  style={{ opacity: 0 }}
+                >
+                  <ServiceCard
+                    title={service.title}
+                    description={service.description}
+                    icon={service.icon}
+                    available={getServiceAvailability(service.relatedServices)}
+                    operations={service.operations}
+                    onTest={handleTest}
+                  />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Multimodal Tab */}
+        {activeTab === "multimodal" && (
+          <MultimodalTester apiBaseUrl={API_BASE_URL} />
+        )}
+
+        {/* Voice Tab (Coming Soon) */}
+        {activeTab === "voice" && (
+          <div className="bg-slate-800/50 rounded-xl p-12 border border-slate-700/50 text-center">
+            <span className="text-6xl mb-4 block">🎙️</span>
+            <h2 className="text-2xl font-bold text-white mb-2">Voice Dialogue</h2>
+            <p className="text-slate-400 mb-4">Transcribe + Polly + Nova による音声対話</p>
+            <p className="text-sm text-slate-500">Coming Soon...</p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Footer */}
