@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ServiceCard } from "./components/ServiceCard";
 import { MultimodalTester } from "./components/Multimodal";
+import { VoiceDialogueTester } from "./components/Voice";
 
 interface ServiceStatus {
   service: string;
@@ -268,14 +269,9 @@ export default function Home() {
           <MultimodalTester apiBaseUrl={API_BASE_URL} />
         )}
 
-        {/* Voice Tab (Coming Soon) */}
+        {/* Voice Tab */}
         {activeTab === "voice" && (
-          <div className="bg-slate-800/50 rounded-xl p-12 border border-slate-700/50 text-center">
-            <span className="text-6xl mb-4 block">🎙️</span>
-            <h2 className="text-2xl font-bold text-white mb-2">Voice Dialogue</h2>
-            <p className="text-slate-400 mb-4">Transcribe + Polly + Nova による音声対話</p>
-            <p className="text-sm text-slate-500">Coming Soon...</p>
-          </div>
+          <VoiceDialogueTester apiBaseUrl={API_BASE_URL} />
         )}
       </div>
 

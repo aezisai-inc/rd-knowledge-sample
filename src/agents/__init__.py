@@ -11,12 +11,26 @@ from .multimodal_agent import (
     generate_image,
     generate_video,
 )
+from .voice_agent import (
+    VoiceDialogueAgent,
+    VoiceConfig,
+    get_default_voice_agent,
+    start_voice_session,
+    process_voice_input,
+)
 
 __all__ = [
+    # Multimodal
     "MultimodalAgent",
     "understand_image",
     "understand_video",
     "generate_image",
     "generate_video",
+    # Voice
+    "VoiceDialogueAgent",
+    "VoiceConfig",
+    "get_default_voice_agent",
+    "start_voice_session",
+    "process_voice_input",
 ]
 
