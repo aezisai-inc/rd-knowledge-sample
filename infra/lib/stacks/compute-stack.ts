@@ -30,6 +30,8 @@ export class ComputeStack extends cdk.Stack {
   public readonly vectorApiLambda: lambda.Function;
   /** Graph API Lambda */
   public readonly graphApiLambda: lambda.Function;
+  /** Agent API Lambda (Multimodal/Voice placeholder) */
+  public readonly agentApiLambda: lambda.Function;
   /** API Gateway */
   public readonly api: apigateway.RestApi;
   /** API Gateway endpoint URL */
@@ -205,6 +207,30 @@ export class ComputeStack extends cdk.Stack {
     });
 
     // =========================================================================
+    // Agent API Lambda (Multimodal/Voice placeholder)
+    // =========================================================================
+    this.agentApiLambda = new lambda.Function(this, "AgentApiLambda", {
+      functionName: `rd-knowledge-agent-api-${config.envName}`,
+      runtime: lambda.Runtime.PYTHON_3_12,
+      architecture: lambda.Architecture.ARM_64,
+      handler: "handler.lambda_handler",
+      code: lambda.Code.fromAsset(
+        path.join(__dirname, "../../lambda/agent-api")
+      ),
+      memorySize: config.lambda.memorySize,
+      timeout: cdk.Duration.seconds(config.lambda.timeout),
+      role: lambdaRole,
+      layers: [dependenciesLayer],
+      environment: {
+        ENVIRONMENT: config.envName,
+        DATA_SOURCE_BUCKET: storageStack.dataSourceBucket.bucketName,
+        LOG_LEVEL: config.envName === "prod" ? "INFO" : "DEBUG",
+      },
+      logRetention: logs.RetentionDays.TWO_WEEKS,
+      tracing: lambda.Tracing.ACTIVE,
+    });
+
+    // =========================================================================
     // API Gateway
     // =========================================================================
     this.api = new apigateway.RestApi(this, "Api", {
@@ -311,6 +337,36 @@ export class ComputeStack extends cdk.Stack {
     graphQueryResource.addMethod(
       "POST",
       new apigateway.LambdaIntegration(this.graphApiLambda)
+    );
+
+    // /v1/agent (Multimodal/Voice placeholder)
+    const agentResource = v1.addResource("agent");
+
+    // /v1/agent/multimodal
+    const multimodalResource = agentResource.addResource("multimodal");
+
+    // /v1/agent/multimodal/invoke
+    const multimodalInvokeResource = multimodalResource.addResource("invoke");
+    multimodalInvokeResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(this.agentApiLambda)
+    );
+
+    // /v1/agent/voice
+    const voiceResource = agentResource.addResource("voice");
+
+    // /v1/agent/voice/process
+    const voiceProcessResource = voiceResource.addResource("process");
+    voiceProcessResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(this.agentApiLambda)
+    );
+
+    // /v1/agent/voice/text
+    const voiceTextResource = voiceResource.addResource("text");
+    voiceTextResource.addMethod(
+      "POST",
+      new apigateway.LambdaIntegration(this.agentApiLambda)
     );
 
     // =========================================================================
