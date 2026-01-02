@@ -38,13 +38,13 @@ TASK-036,Neo4j AuraDB セットアップスクリプト,AuraDB インスタン�
 TASK-037,Neo4j 接続テストスクリプト,接続テストとサンプル操作の検証スクリプト,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-036,scripts/test-neo4j-connection.py
 TASK-038,CDK 再デプロイ,Storage/Compute/Frontend スタック再デプロイ,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-037,EC2+Neo4j構成でデプロイ完了
 TASK-039,API 動作確認,Graph API エンドポイントの動作確認,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-038,ノード作成・取得テスト成功
-# Phase 7: Multimodal テストケース（未着手）
-TASK-040,Nova Vision 調査・設計,Nova Vision API の仕様調査と設計ドキュメント作成,completed,AI,critical,2026-01-02,2026-01-02,4,2,,docs/MULTIMODAL_DESIGN.md
-TASK-041,画像認識 Lambda 実装,画像入力→テキスト出力の Lambda ハンドラー,pending,AI,high,,,3,,TASK-040,infra/lambda/multimodal-api/
-TASK-042,画像生成 Lambda 実装,Nova Canvas によるテキスト→画像生成,pending,AI,high,,,3,,TASK-041,Nova Canvas API
-TASK-043,動画認識 Lambda 実装,動画入力→要約出力の Lambda ハンドラー,pending,AI,medium,,,4,,TASK-042,Nova Video API
-TASK-044,動画生成 Lambda 実装,Nova Reel によるテキスト→動画生成,pending,AI,medium,,,4,,TASK-043,Nova Reel API
-TASK-045,Multimodal CDK 更新,API Gateway + Lambda リソース追加,pending,AI,high,,,2,,TASK-044,compute-stack.ts 更新
+# Phase 7: Multimodal テストケース（StrandsAgents + AgentCore）
+TASK-040,Nova Multimodal 調査・設計,StrandsAgents+AgentCore アーキテクチャ設計,completed,AI,critical,2026-01-02,2026-01-02,4,2,,docs/MULTIMODAL_DESIGN.md
+TASK-041,StrandsAgents Multimodal Agent,マルチモーダル対応 Agent 定義（Nova Pro）,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-040,src/agents/multimodal_agent.py
+TASK-042,Image Generate Tool,Nova Canvas Tool 実装,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-041,src/agents/tools/image_generate.py
+TASK-043,Video Generate Tool,Nova Reel Tool 実装,completed,AI,medium,2026-01-02,2026-01-02,2,1,TASK-042,src/agents/tools/video_generate.py
+TASK-044,AgentCore Memory 統合,セッション記憶・長期記憶の統合,pending,AI,high,,,2,,TASK-043,src/agents/config.py
+TASK-045,AgentCore Runtime デプロイ,CDK + AgentCore SDK 設定,pending,AI,high,,,3,,TASK-044,infra/lib/stacks/agentcore-stack.ts
 TASK-046,Multimodal UI 実装,画像/動画アップロード・表示コンポーネント,pending,AI,high,,,4,,TASK-045,app/components/Multimodal/
 # Phase 8: Voice Dialogue テストケース（未着手）
 TASK-050,音声対話 調査・設計,Transcribe/Polly/Nova の仕様調査と設計,pending,AI,critical,,,4,,,docs/VOICE_DIALOGUE_DESIGN.md
