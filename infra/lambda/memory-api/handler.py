@@ -102,7 +102,7 @@ def create_event(body: dict) -> dict:
 
 
 def retrieve_records(query_params: dict) -> dict:
-    """メモリレコード検索"""
+    """イベント一覧取得（list_events）"""
     client = get_memory_client()
     memory_id = os.environ.get("MEMORY_ID")
 
@@ -110,37 +110,39 @@ def retrieve_records(query_params: dict) -> dict:
         return response(400, {"error": "MEMORY_ID not configured"})
 
     actor_id = query_params.get("actor_id")
-    query = query_params.get("query", "")
-    limit = int(query_params.get("limit", "10"))
+    session_id = query_params.get("session_id")
+    limit = int(query_params.get("limit", "50"))
 
     if not actor_id:
         return response(400, {"error": "actor_id is required"})
+    if not session_id:
+        return response(400, {"error": "session_id is required"})
 
     try:
-        result = client.retrieve_memory_records(
+        result = client.list_events(
             memoryId=memory_id,
+            sessionId=session_id,
             actorId=actor_id,
-            query=query,
+            includePayloads=True,
             maxResults=limit,
         )
 
-        records = result.get("memoryRecords", [])
+        events = result.get("events", [])
         return response(
             200,
             {
-                "records": [
+                "events": [
                     {
-                        "id": r.get("recordId"),
-                        "memory_type": r.get("memoryType"),
-                        "content": r.get("content"),
-                        "score": r.get("score"),
+                        "id": e.get("eventId"),
+                        "timestamp": e.get("eventTimestamp"),
+                        "payload": e.get("payload"),
                     }
-                    for r in records
+                    for e in events
                 ]
             },
         )
     except Exception as e:
-        logger.exception("Failed to retrieve records")
+        logger.exception("Failed to list events")
         return response(500, {"error": str(e)})
 
 

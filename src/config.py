@@ -59,22 +59,26 @@ class AWSConfig:
     """AWS本番環境設定"""
 
     # 共通
-    region: str = "us-west-2"
+    region: str = "ap-northeast-1"
 
     # S3 Vectors
     vector_bucket_name: str = ""
+    vector_region: str = "ap-northeast-1"
 
     # Bedrock Knowledge Base
     knowledge_base_id: str = ""
-    embedding_model_arn: str = "arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v2:0"
-    generation_model_arn: str = "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+    embedding_model_arn: str = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
+    generation_model_arn: str = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
 
     # AgentCore Memory
     memory_id: str = ""
+    memory_region: str = "us-east-1"
 
-    # Neptune
-    neptune_endpoint: str = ""
-    neptune_port: int = 8182
+    # Neo4j (Neptune廃止)
+    neo4j_uri: str = ""
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = ""
+    neo4j_database: str = "neo4j"
 
 
 @lru_cache
@@ -103,20 +107,24 @@ def get_local_config() -> LocalConfig:
 def get_aws_config() -> AWSConfig:
     """AWS設定を取得"""
     return AWSConfig(
-        region=os.getenv("AWS_REGION", "us-west-2"),
-        vector_bucket_name=os.getenv("VECTOR_BUCKET_NAME", ""),
+        region=os.getenv("AWS_REGION", "ap-northeast-1"),
+        vector_bucket_name=os.getenv("VECTOR_BUCKET_NAME", "rd-knowledge-vectors-dev"),
+        vector_region=os.getenv("VECTOR_REGION", "ap-northeast-1"),
         knowledge_base_id=os.getenv("KNOWLEDGE_BASE_ID", ""),
         embedding_model_arn=os.getenv(
             "EMBEDDING_MODEL_ARN",
-            "arn:aws:bedrock:us-west-2::foundation-model/amazon.titan-embed-text-v2:0",
+            "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0",
         ),
         generation_model_arn=os.getenv(
             "GENERATION_MODEL_ARN",
-            "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
+            "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
         ),
-        memory_id=os.getenv("MEMORY_ID", ""),
-        neptune_endpoint=os.getenv("NEPTUNE_ENDPOINT", ""),
-        neptune_port=int(os.getenv("NEPTUNE_PORT", "8182")),
+        memory_id=os.getenv("MEMORY_ID", "rdKnowledgeMemoryDev-gJ7WAs96sJ"),
+        memory_region=os.getenv("MEMORY_REGION", "us-east-1"),
+        neo4j_uri=os.getenv("NEO4J_URI", ""),
+        neo4j_user=os.getenv("NEO4J_USER", "neo4j"),
+        neo4j_password=os.getenv("NEO4J_PASSWORD", ""),
+        neo4j_database=os.getenv("NEO4J_DATABASE", "neo4j"),
     )
 
 
@@ -146,7 +154,7 @@ def get_vector_store() -> "VectorStore":
 
         config = get_aws_config()
         return AWSVectorStore(
-            region=config.region,
+            region=config.vector_region,  # S3 Vectors は ap-northeast-1 で作成済み
             bucket_name=config.vector_bucket_name,
         )
 
@@ -202,7 +210,7 @@ def get_memory_store() -> "MemoryStore":
 
         config = get_aws_config()
         return AWSMemoryStore(
-            region=config.region,
+            region=config.memory_region,  # Memory は us-east-1 で作成済み
             memory_id=config.memory_id,
         )
 
@@ -214,7 +222,7 @@ def get_graph_store() -> "GraphStore":
     Returns:
         GraphStore: 環境に応じたアダプタ
             - local: LocalGraphStore (Neo4j)
-            - aws: AWSGraphStore (Neptune)
+            - aws: AWSGraphStore (Neo4j AuraDB / EC2 Neo4j)
     """
     env = get_environment()
 
@@ -232,9 +240,10 @@ def get_graph_store() -> "GraphStore":
 
         config = get_aws_config()
         return AWSGraphStore(
-            region=config.region,
-            endpoint=config.neptune_endpoint,
-            port=config.neptune_port,
+            uri=config.neo4j_uri,
+            user=config.neo4j_user,
+            password=config.neo4j_password,
+            database=config.neo4j_database,
         )
 
 
@@ -257,8 +266,8 @@ def print_environment_info() -> None:
     else:
         config = get_aws_config()
         print(f"  🌐 Region: {config.region}")
-        print(f"  🗄️  Vector Bucket: {config.vector_bucket_name or '(not set)'}")
+        print(f"  🗄️  Vector Bucket: {config.vector_bucket_name or '(not set)'} ({config.vector_region})")
         print(f"  📚 Knowledge Base: {config.knowledge_base_id or '(not set)'}")
-        print(f"  🧠 Memory ID: {config.memory_id or '(not set)'}")
-        print(f"  🕸️  Neptune: {config.neptune_endpoint or '(not set)'}")
+        print(f"  🧠 Memory ID: {config.memory_id or '(not set)'} ({config.memory_region})")
+        print(f"  🕸️  Neo4j: {config.neo4j_uri or '(not set)'}")
 

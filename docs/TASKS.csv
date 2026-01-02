@@ -38,3 +38,29 @@ TASK-036,Neo4j AuraDB セットアップスクリプト,AuraDB インスタン�
 TASK-037,Neo4j 接続テストスクリプト,接続テストとサンプル操作の検証スクリプト,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-036,scripts/test-neo4j-connection.py
 TASK-038,CDK 再デプロイ,Storage/Compute/Frontend スタック再デプロイ,completed,AI,critical,2026-01-01,2026-01-01,2,1,TASK-037,EC2+Neo4j構成でデプロイ完了
 TASK-039,API 動作確認,Graph API エンドポイントの動作確認,completed,AI,high,2026-01-01,2026-01-01,1,1,TASK-038,ノード作成・取得テスト成功
+# Phase 7: Multimodal テストケース（未着手）
+TASK-040,Nova Vision 調査・設計,Nova Vision API の仕様調査と設計ドキュメント作成,completed,AI,critical,2026-01-02,2026-01-02,4,2,,docs/MULTIMODAL_DESIGN.md
+TASK-041,画像認識 Lambda 実装,画像入力→テキスト出力の Lambda ハンドラー,pending,AI,high,,,3,,TASK-040,infra/lambda/multimodal-api/
+TASK-042,画像生成 Lambda 実装,Nova Canvas によるテキスト→画像生成,pending,AI,high,,,3,,TASK-041,Nova Canvas API
+TASK-043,動画認識 Lambda 実装,動画入力→要約出力の Lambda ハンドラー,pending,AI,medium,,,4,,TASK-042,Nova Video API
+TASK-044,動画生成 Lambda 実装,Nova Reel によるテキスト→動画生成,pending,AI,medium,,,4,,TASK-043,Nova Reel API
+TASK-045,Multimodal CDK 更新,API Gateway + Lambda リソース追加,pending,AI,high,,,2,,TASK-044,compute-stack.ts 更新
+TASK-046,Multimodal UI 実装,画像/動画アップロード・表示コンポーネント,pending,AI,high,,,4,,TASK-045,app/components/Multimodal/
+# Phase 8: Voice Dialogue テストケース（未着手）
+TASK-050,音声対話 調査・設計,Transcribe/Polly/Nova の仕様調査と設計,pending,AI,critical,,,4,,,docs/VOICE_DIALOGUE_DESIGN.md
+TASK-051,STT Lambda 実装,音声入力→テキスト変換 (Transcribe),pending,AI,high,,,3,,TASK-050,infra/lambda/voice-api/
+TASK-052,TTS Lambda 実装,テキスト→音声出力 (Polly),pending,AI,high,,,3,,TASK-051,Polly Neural Voices
+TASK-053,WebSocket API 実装,リアルタイム双方向通信,pending,AI,critical,,,4,,TASK-052,API Gateway WebSocket
+TASK-054,音声対話 Lambda 統合,STT + Nova + TTS の統合ハンドラー,pending,AI,high,,,4,,TASK-053,エンドツーエンド音声対話
+TASK-055,Voice CDK 更新,WebSocket API Gateway + Lambda 追加,pending,AI,high,,,2,,TASK-054,compute-stack.ts 更新
+TASK-056,Voice UI 実装,マイク入力・音声再生コンポーネント,pending,AI,high,,,4,,TASK-055,app/components/Voice/
+# Phase 9: 管理画面UI統合（未着手）
+TASK-060,ダッシュボード設計,3テストケース切り替えUIの設計,pending,AI,high,,,2,,TASK-046;TASK-056,docs/UI_DESIGN.md
+TASK-061,タブ切り替え実装,Memory/Multimodal/Voice タブ切り替え,pending,AI,high,,,3,,TASK-060,app/page.tsx 更新
+TASK-062,テスト履歴機能,実行履歴の保存・閲覧機能,pending,AI,medium,,,3,,TASK-061,LocalStorage / DynamoDB
+TASK-063,結果比較機能,複数テスト結果の並列表示・比較,pending,AI,medium,,,2,,TASK-062,レスポンス比較UI
+# Phase 10: E2Eテスト・ドキュメント（未着手）
+TASK-070,Multimodal E2Eテスト,pytest による画像/動画処理テスト,pending,AI,high,,,3,,TASK-046,tests/test_multimodal.py
+TASK-071,Voice E2Eテスト,pytest による音声対話テスト,pending,AI,high,,,3,,TASK-056,tests/test_voice.py
+TASK-072,統合E2Eテスト,全3テストケースの統合テスト,pending,AI,critical,,,4,,TASK-070;TASK-071,tests/test_integration.py
+TASK-073,完成ドキュメント,プロジェクト完了レポート・知見まとめ,pending,AI,high,,,3,,TASK-072,docs/COMPLETION_REPORT.md
