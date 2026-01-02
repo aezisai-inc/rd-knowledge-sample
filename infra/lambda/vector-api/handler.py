@@ -20,24 +20,26 @@ DATA_SOURCE_BUCKET = os.environ.get("DATA_SOURCE_BUCKET", "")
 
 def get_s3vectors_client():
     """S3 Vectors クライアントを取得"""
+    region = os.environ.get("VECTOR_REGION", "ap-northeast-1")
     if ENVIRONMENT == "local":
         return boto3.client(
             "s3vectors",
             endpoint_url=os.environ.get("LOCALSTACK_ENDPOINT", "http://localhost:4566"),
-            region_name="us-west-2",
+            region_name=region,
         )
-    return boto3.client("s3vectors", region_name="us-west-2")
+    return boto3.client("s3vectors", region_name=region)
 
 
 def get_bedrock_runtime_client():
     """Bedrock Runtime クライアントを取得"""
+    region = os.environ.get("BEDROCK_REGION", "us-east-1")
     if ENVIRONMENT == "local":
         return boto3.client(
             "bedrock-runtime",
             endpoint_url=os.environ.get("LOCALSTACK_ENDPOINT", "http://localhost:4566"),
-            region_name="us-west-2",
+            region_name=region,
         )
-    return boto3.client("bedrock-runtime", region_name="us-west-2")
+    return boto3.client("bedrock-runtime", region_name=region)
 
 
 def lambda_handler(event: dict, context: Any) -> dict:
@@ -86,8 +88,8 @@ def generate_embedding(text: str) -> list[float]:
         return result["embedding"]
     except Exception as e:
         logger.warning(f"Failed to generate embedding: {e}")
-        # フォールバック: ダミーベクトル
-        return [0.0] * 1024
+        # フォールバック: ダミーベクトル (Titan Embed v2 は 1024 次元)
+        return [0.1] * 1024
 
 
 def put_vectors(body: dict) -> dict:

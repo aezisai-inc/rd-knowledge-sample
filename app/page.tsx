@@ -79,31 +79,45 @@ export default function Home() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_ENDPOINT || "https://s3pa7bz4o2.execute-api.ap-northeast-1.amazonaws.com/dev";
 
   const handleTest = async (endpoint: string): Promise<unknown> => {
-    // エンドポイントマッピング
+    // エンドポイントマッピング（Lambda API形式に合わせる）
     const endpointMap: Record<string, { path: string; method: string; body?: object }> = {
       "/agentcore/create-memory": { 
         path: "/v1/memory", 
         method: "POST",
-        body: { actorId: "demo-user", action: "create" }
+        body: { 
+          events: [{ 
+            actor_id: "demo-user", 
+            session_id: "demo-session-1", 
+            role: "USER", 
+            content: "Memory creation test" 
+          }] 
+        }
       },
       "/agentcore/create-event": { 
         path: "/v1/memory", 
         method: "POST",
-        body: { actorId: "demo-user", action: "event", content: "test event" }
+        body: { 
+          events: [{ 
+            actor_id: "demo-user", 
+            session_id: "demo-session-1", 
+            role: "USER", 
+            content: "Test event from frontend" 
+          }] 
+        }
       },
       "/agentcore/retrieve": { 
-        path: "/v1/memory?actorId=demo-user", 
+        path: "/v1/memory?actor_id=demo-user&session_id=demo-session-1", 
         method: "GET"
       },
       "/bedrock-kb/retrieve": { 
         path: "/v1/vectors/query", 
         method: "POST",
-        body: { query: "sample query", topK: 5 }
+        body: { index_name: "knowledge-index", query: "sample query", top_k: 5 }
       },
       "/s3-vectors/query": { 
         path: "/v1/vectors/query", 
         method: "POST",
-        body: { query: "sample query", topK: 5 }
+        body: { index_name: "knowledge-index", query: "sample query", top_k: 5 }
       },
     };
 
@@ -111,6 +125,10 @@ export default function Home() {
     if (!config) {
       return { error: "Unknown endpoint" };
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/df67d052-f0e8-41ce-9f16-9bce1499703c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:handleTest',message:'API Request Start',data:{endpoint,url:`${API_BASE_URL}${config.path}`,method:config.method,body:config.body},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})}).catch(()=>{});
+    // #endregion
 
     try {
       const response = await fetch(`${API_BASE_URL}${config.path}`, {
@@ -121,12 +139,20 @@ export default function Home() {
         body: config.body ? JSON.stringify(config.body) : undefined,
       });
 
+      // #region agent log
+      const responseText = await response.clone().text();
+      fetch('http://127.0.0.1:7243/ingest/df67d052-f0e8-41ce-9f16-9bce1499703c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:handleTest:response',message:'API Response',data:{endpoint,status:response.status,statusText:response.statusText,ok:response.ok,responseBody:responseText.substring(0,500)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+      // #endregion
+
       if (!response.ok) {
         return { error: `HTTP ${response.status}: ${response.statusText}` };
       }
 
       return await response.json();
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/df67d052-f0e8-41ce-9f16-9bce1499703c',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:handleTest:error',message:'API Error',data:{endpoint,error:error instanceof Error ? error.message : String(error)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       console.error("API call failed:", error);
       return { error: `API Error: ${error instanceof Error ? error.message : "Unknown error"}` };
     }

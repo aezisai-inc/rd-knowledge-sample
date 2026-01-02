@@ -59,6 +59,7 @@ class AWSVectorStore:
         index_name: str,
         dimension: int,
         distance_metric: str = "cosine",
+        data_type: str = "float32",
     ) -> str:
         """インデックス作成"""
         # Vector Bucket が未作成の場合は作成
@@ -71,11 +72,12 @@ class AWSVectorStore:
         self._client.create_index(
             vectorBucketName=self.bucket_name,
             indexName=index_name,
+            dataType=data_type,
             dimension=dimension,
             distanceMetric=distance_metric,
         )
 
-        logger.info(f"Created index '{index_name}' (dimension={dimension})")
+        logger.info(f"Created index '{index_name}' (dimension={dimension}, dataType={data_type})")
         return index_name
 
     def delete_index(self, index_name: str) -> bool:

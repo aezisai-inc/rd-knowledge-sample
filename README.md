@@ -1,14 +1,41 @@
 # rd-knowledge-sample
 
-## 目的
+## 🎯 プロジェクト目的
 
-**ローカル環境とAWS本番環境の差分を明確にし、サンプル実装で比較できるようにする。**
+**AWS Nova シリーズ導入のための技術検証プロジェクト**
 
-対象サービス:
+3つの独立したAIエージェントを構築し、管理画面UIで切り替えながら実行・検証できるシステムを完成させる。
+
+### テストケース
+
+| # | テストケース | 技術スタック | 状態 |
+|---|-------------|-------------|------|
+| ① | **Memory** | AgentCore Memory + Bedrock KB + S3 Vectors + Neo4j | ✅ 完了 |
+| ② | **Multimodal** | Nova Vision + Nova Canvas + Nova Reel | ⏳ 未着手 |
+| ③ | **Voice Dialogue** | Transcribe + Nova + Polly + WebSocket | ⏳ 未着手 |
+
+> 📋 詳細は [docs/BUSINESS_REQUIREMENTS.md](./docs/BUSINESS_REQUIREMENTS.md) を参照
+
+---
+
+## 対象サービス
+
+### Memory テストケース（完了）
 - **Amazon S3 Vectors** - ベクトルストレージ
 - **Amazon Bedrock Knowledge Bases** - マネージドRAG
 - **AgentCore Memory** - エージェント記憶
 - **Neo4j / Graphiti** - ナレッジグラフ（Neptune から移行）
+
+### Multimodal テストケース（未着手）
+- **Nova Vision** - 画像認識
+- **Nova Canvas** - 画像生成
+- **Nova Reel** - 動画生成
+
+### Voice Dialogue テストケース（未着手）
+- **Amazon Transcribe** - 音声認識（STT）
+- **Amazon Polly** - 音声合成（TTS）
+- **Nova Text** - 対話生成
+- **WebSocket API** - リアルタイム通信
 
 ---
 
