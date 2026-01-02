@@ -45,7 +45,7 @@ TASK-042,Image Generate Tool,Nova Canvas Tool 実装,completed,AI,high,2026-01-0
 TASK-043,Video Generate Tool,Nova Reel Tool 実装,completed,AI,medium,2026-01-02,2026-01-02,2,1,TASK-042,src/agents/tools/video_generate.py
 TASK-044,AgentCore Memory 統合,セッション記憶・長期記憶の統合,completed,AI,high,2026-01-02,2026-01-02,2,1,TASK-043,src/agents/config.py
 TASK-045,AgentCore Runtime デプロイ,AgentCore Starter Toolkit 設定,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-044,agentcore.yaml + runtime.py
-TASK-046,Multimodal UI 実装,画像/動画アップロード・表示コンポーネント,pending,AI,high,,,4,,TASK-045,app/components/Multimodal/
+TASK-046,Multimodal UI 実装,画像/動画アップロード・表示コンポーネント,completed,AI,high,2026-01-02,2026-01-02,4,1,TASK-045,app/components/Multimodal/
 # Phase 8: Voice Dialogue テストケース（未着手）
 TASK-050,音声対話 調査・設計,Transcribe/Polly/Nova の仕様調査と設計,pending,AI,critical,,,4,,,docs/VOICE_DIALOGUE_DESIGN.md
 TASK-051,STT Lambda 実装,音声入力→テキスト変換 (Transcribe),pending,AI,high,,,3,,TASK-050,infra/lambda/voice-api/
