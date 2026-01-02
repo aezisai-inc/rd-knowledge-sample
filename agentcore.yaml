@@ -1,0 +1,45 @@
+# AgentCore Runtime Configuration
+# https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-toolkit.html
+
+name: rd-knowledge-multimodal-agent
+description: AWS Nova を活用したマルチモーダル AI エージェント
+
+# Agent Entry Point
+agent:
+  module: src.agents.runtime
+  attribute: agent
+
+# Runtime Configuration
+runtime:
+  # タイムアウト（秒）- 動画生成対応のため長め
+  timeout: 300
+  # メモリサイズ（MB）
+  memory: 2048
+  # 同時実行数
+  concurrency: 10
+
+# Environment Variables
+environment:
+  AWS_REGION: ap-northeast-1
+  MODEL_ID: amazon.nova-pro-v1:0
+  USE_AGENTCORE_MEMORY: "true"
+  OUTPUT_BUCKET: rd-knowledge-multimodal-output
+  LOG_LEVEL: INFO
+
+# IAM Permissions
+permissions:
+  - bedrock:InvokeModel
+  - bedrock:InvokeModelWithResponseStream
+  - bedrock:StartAsyncInvoke
+  - bedrock:GetAsyncInvoke
+  - bedrock-agentcore:*
+  - s3:GetObject
+  - s3:PutObject
+  - s3:ListBucket
+
+# Tags
+tags:
+  Project: rd-knowledge-sample
+  Environment: dev
+  ManagedBy: agentcore-toolkit
+
