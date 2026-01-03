@@ -4,9 +4,10 @@
  *
  * スタック構成:
  * - StorageStack: S3, Neo4j (AuraDB)
- * - ComputeStack: Lambda, API Gateway
- * - FrontendStack: S3, CloudFront
- * - PipelineStack: CodePipeline CI/CD
+ * - PipelineStack: CodePipeline CI/CD (optional)
+ *
+ * Note: Compute (Lambda, API Gateway) と Frontend (CloudFront) は
+ * Amplify Gen2 (AppSync) に移行済み。
  *
  * グラフDB: Neptune Serverless → Neo4j AuraDB に移行
  * コスト削減: ~$166/月 → $0〜65/月
@@ -15,9 +16,7 @@
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { StorageStack } from "../lib/stacks/storage-stack";
-import { ComputeStack } from "../lib/stacks/compute-stack";
 import { PipelineStack } from "../lib/stacks/pipeline-stack";
-import { FrontendStack } from "../lib/stacks/frontend-stack";
 import { getEnvironmentConfig } from "../lib/config/environments";
 
 const app = new cdk.App();
@@ -49,30 +48,13 @@ const storageStack = new StorageStack(app, `RdKnowledge-Storage-${envName}`, {
 });
 
 // =============================================================================
-// Compute Stack
+// Note: Compute Stack と Frontend Stack は Amplify Gen2 に移行
+// - AppSync GraphQL API (Lambda Resolvers)
+// - Amplify Hosting (Next.js SSR)
+//
+// ⚠️ frontend-stack.ts はロールバック用に保持
+// 完全移行確認後に削除予定
 // =============================================================================
-const computeStack = new ComputeStack(app, `RdKnowledge-Compute-${envName}`, {
-  env,
-  config,
-  tags,
-  storageStack,
-  description: "rd-knowledge-sample Compute Layer (Lambda, API Gateway)",
-});
-
-computeStack.addDependency(storageStack);
-
-// =============================================================================
-// Frontend Stack (S3 + CloudFront)
-// =============================================================================
-const frontendStack = new FrontendStack(app, `RdKnowledge-Frontend-${envName}`, {
-  env,
-  tags,
-  envName,
-  apiEndpoint: computeStack.apiEndpoint,
-  description: "rd-knowledge-sample Frontend (S3 + CloudFront)",
-});
-
-frontendStack.addDependency(computeStack);
 
 // =============================================================================
 // Pipeline Stack (CI/CD)
