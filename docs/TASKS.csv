@@ -76,5 +76,5 @@ TASK-087,Backend 統合,backend.ts でリソース統合,completed,AI,critical,2
 TASK-088,Amplify Client 設定,lib/amplify-config.ts 設定,completed,AI,high,2026-01-03,2026-01-03,1,1,TASK-087,ConfigureAmplify更新
 TASK-089,Amplify Sandbox 検証,npx ampx sandbox で動作確認 + Bedrock接続確認,completed,AI,critical,2026-01-03,2026-01-03,2,2,,Bedrock Claude 3 Haiku接続成功
 TASK-090,既存 CDK 削除,infra/ の API Gateway / CloudFront 削除,completed,AI,medium,2026-01-03,2026-01-03,2,1,TASK-089,compute-stack.ts削除
-TASK-091,Amplify Hosting デプロイ,本番環境デプロイ,pending,AI,critical,,,2,,TASK-090,Git連携設定
+TASK-091,Amplify Hosting デプロイ,本番環境デプロイ,in_progress,AI,critical,2026-01-03,,2,,TASK-090,GitHub Actions CI/CD + amplify.yml作成
 TASK-092,E2E テスト更新・実行,GraphQL ベースのテスト実行,pending,AI,critical,,,3,,TASK-091,全機能検証
