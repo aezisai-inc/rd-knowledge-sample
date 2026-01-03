@@ -64,3 +64,30 @@ TASK-070,Multimodal E2Eテスト,pytest による画像/動画処理テスト,co
 TASK-071,Voice E2Eテスト,pytest による音声対話テスト,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-056,tests/test_voice.py
 TASK-072,統合E2Eテスト,全3テストケースの統合テスト,completed,AI,critical,2026-01-02,2026-01-02,4,1,TASK-070;TASK-071,tests/test_integration.py
 TASK-073,完成ドキュメント,プロジェクト完了レポート・知見まとめ,completed,AI,high,2026-01-02,2026-01-02,3,1,TASK-072,docs/COMPLETION_REPORT.md
+# Phase 11: Amplify Gen2 + AppSync 移行
+TASK-080,Amplify Gen2 移行設計,API Gateway→AppSync+Amplify Hosting移行設計,completed,AI,critical,2026-01-03,2026-01-03,3,1,TASK-073,docs/APPSYNC_MIGRATION_DESIGN.md
+TASK-081,Amplify Gen2 初期化,app/amplify/ ディレクトリ構造作成,completed,AI,critical,2026-01-03,2026-01-03,2,1,TASK-080,npm create amplify@latest
+TASK-082,GraphQL スキーマ定義,data/resource.ts でAppSyncスキーマ定義,completed,AI,critical,2026-01-03,2026-01-03,3,1,TASK-081,Query/Mutation/Subscription
+TASK-083,Memory Resolver Lambda,AgentCore Memory 操作 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/memory-resolver/
+TASK-084,Vector Resolver Lambda,S3 Vector 検索 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/vector-resolver/
+TASK-085,Graph Resolver Lambda,Neo4j 操作 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/graph-resolver/
+TASK-086,Agent Resolver Lambda,Multimodal/Voice エージェント Lambda,completed,AI,high,2026-01-03,2026-01-03,3,1,TASK-082,functions/agent-resolver/
+TASK-087,Backend 統合,backend.ts でリソース統合,completed,AI,critical,2026-01-03,2026-01-03,1,1,TASK-083~086,X-Ray有効化
+TASK-088,Amplify Client 設定,lib/amplify-config.ts 設定,completed,AI,high,2026-01-03,2026-01-03,1,1,TASK-087,ConfigureAmplify更新
+TASK-089,Amplify Sandbox 検証,npx ampx sandbox で動作確認,in_progress,AI,critical,2026-01-03,,2,,,ローカル検証
+TASK-090,既存 CDK 削除,infra/ の API Gateway / CloudFront 削除,pending,AI,medium,,,2,,TASK-089,Amplify移行完了後
+TASK-091,Amplify Hosting デプロイ,本番環境デプロイ,pending,AI,critical,,,2,,TASK-089,Git連携設定
+TASK-092,E2E テスト更新・実行,GraphQL ベースのテスト実行,pending,AI,critical,,,3,,TASK-091,全機能検証# Phase 11: Amplify Gen2 + AppSync 移行
+TASK-080,Amplify Gen2 移行設計,API Gateway→AppSync+Amplify Hosting移行設計,completed,AI,critical,2026-01-03,2026-01-03,3,1,TASK-073,docs/APPSYNC_MIGRATION_DESIGN.md
+TASK-081,Amplify Gen2 初期化,app/amplify/ ディレクトリ構造作成,completed,AI,critical,2026-01-03,2026-01-03,2,1,TASK-080,npm create amplify@latest
+TASK-082,GraphQL スキーマ定義,data/resource.ts でAppSyncスキーマ定義,completed,AI,critical,2026-01-03,2026-01-03,3,1,TASK-081,Query/Mutation/Subscription
+TASK-083,Memory Resolver Lambda,AgentCore Memory 操作 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/memory-resolver/
+TASK-084,Vector Resolver Lambda,S3 Vector 検索 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/vector-resolver/
+TASK-085,Graph Resolver Lambda,Neo4j 操作 Lambda,completed,AI,high,2026-01-03,2026-01-03,2,1,TASK-082,functions/graph-resolver/
+TASK-086,Agent Resolver Lambda,Multimodal/Voice エージェント Lambda,completed,AI,high,2026-01-03,2026-01-03,3,1,TASK-082,functions/agent-resolver/
+TASK-087,Backend 統合,backend.ts でリソース統合,completed,AI,critical,2026-01-03,2026-01-03,1,1,TASK-083~086,X-Ray有効化
+TASK-088,Amplify Client 設定,lib/amplify-config.ts 設定,completed,AI,high,2026-01-03,2026-01-03,1,1,TASK-087,ConfigureAmplify更新
+TASK-089,Amplify Sandbox 検証,npx ampx sandbox で動作確認,in_progress,AI,critical,2026-01-03,,2,,,ローカル検証
+TASK-090,既存 CDK 削除,infra/ の API Gateway / CloudFront 削除,pending,AI,medium,,,2,,TASK-089,Amplify移行完了後
+TASK-091,Amplify Hosting デプロイ,本番環境デプロイ,pending,AI,critical,,,2,,TASK-089,Git連携設定
+TASK-092,E2E テスト更新・実行,GraphQL ベースのテスト実行,pending,AI,critical,,,3,,TASK-091,全機能検証

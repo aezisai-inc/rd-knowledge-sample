@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
+import { configureAmplify } from "../lib/amplify-config";
+
 /**
- * ConfigureAmplify - Placeholder component
- * 
- * Note: This project now uses direct API Gateway calls instead of Amplify.
- * This component is kept for backwards compatibility but does nothing.
+ * ConfigureAmplify - Amplify Gen2 設定コンポーネント
+ *
+ * アプリケーション起動時に Amplify を設定
+ * amplify_outputs.json から自動的に設定を読み込む
  */
 export function ConfigureAmplify() {
+  useEffect(() => {
+    configureAmplify();
+  }, []);
+
   return null;
 }
