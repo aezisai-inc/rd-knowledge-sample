@@ -70,11 +70,12 @@ dist/
 !.env.example
 
 # =============================================================================
-# AWS Amplify (Legacy)
+# AWS Amplify Gen2
 # =============================================================================
+# Generated artifacts (ignore)
 .amplify/
 amplify_outputs.json
-amplify/
+# Note: app/amplify/ is source code and SHOULD be tracked
 
 # =============================================================================
 # IDE / Editor
