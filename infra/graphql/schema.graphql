@@ -1,0 +1,215 @@
+# ==============================================================================
+# AWS AppSync GraphQL Schema for rd-knowledge-sample
+#
+# AgentCore + StrandsAgents + BedrockAPI 構成
+# CloudTrail/X-Ray 追跡対応
+# ==============================================================================
+
+# ==============================================================================
+# Types - Memory
+# ==============================================================================
+
+type MemoryEvent {
+  id: ID!
+  actorId: ID!
+  sessionId: ID!
+  role: MemoryRole!
+  content: String!
+  timestamp: AWSDateTime!
+  metadata: AWSJSON
+}
+
+enum MemoryRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+# ==============================================================================
+# Types - Vector Search
+# ==============================================================================
+
+type VectorResult {
+  id: ID!
+  score: Float!
+  content: String!
+  metadata: AWSJSON
+}
+
+# ==============================================================================
+# Types - Graph (Neo4j)
+# ==============================================================================
+
+type GraphNode {
+  id: ID!
+  labels: [String!]!
+  properties: AWSJSON!
+}
+
+type GraphEdge {
+  id: ID!
+  type: String!
+  sourceId: ID!
+  targetId: ID!
+  properties: AWSJSON
+}
+
+type GraphQueryResult {
+  nodes: [GraphNode!]!
+  edges: [GraphEdge!]!
+}
+
+# ==============================================================================
+# Types - Agent (Multimodal)
+# ==============================================================================
+
+type AgentResponse {
+  success: Boolean!
+  content: String
+  images: [GeneratedImage!]
+  videos: [GeneratedVideo!]
+  toolResults: AWSJSON
+  error: String
+}
+
+type GeneratedImage {
+  base64: String!
+  seed: Int
+}
+
+type GeneratedVideo {
+  jobId: String!
+  status: String!
+  statusUrl: String
+}
+
+# ==============================================================================
+# Types - Agent (Voice)
+# ==============================================================================
+
+type VoiceResponse {
+  sessionId: ID!
+  transcript: String
+  userText: String
+  assistantText: String!
+  audio: String
+  timestamp: AWSDateTime!
+}
+
+# ==============================================================================
+# Input Types - Memory
+# ==============================================================================
+
+input MemoryEventInput {
+  actorId: ID!
+  sessionId: ID!
+  role: MemoryRole!
+  content: String!
+  metadata: AWSJSON
+}
+
+# ==============================================================================
+# Input Types - Vector
+# ==============================================================================
+
+input VectorQueryInput {
+  query: String!
+  topK: Int = 5
+  filter: AWSJSON
+}
+
+# ==============================================================================
+# Input Types - Graph
+# ==============================================================================
+
+input GraphNodeInput {
+  labels: [String!]!
+  properties: AWSJSON!
+}
+
+input GraphEdgeInput {
+  type: String!
+  sourceId: ID!
+  targetId: ID!
+  properties: AWSJSON
+}
+
+input GraphQueryInput {
+  cypher: String!
+  parameters: AWSJSON
+}
+
+# ==============================================================================
+# Input Types - Agent
+# ==============================================================================
+
+input MultimodalInput {
+  message: String!
+  images: [String!]
+  videos: [String!]
+  sessionId: ID
+  actorId: ID
+}
+
+input VoiceTextInput {
+  text: String!
+  voiceId: String = "ruth"
+  language: String = "en-US"
+  sessionId: ID
+  actorId: ID
+}
+
+# ==============================================================================
+# Query
+# ==============================================================================
+
+type Query {
+  # Memory - AgentCore Memory から取得
+  getMemoryEvents(actorId: ID!, sessionId: ID, limit: Int): [MemoryEvent!]!
+  getMemorySession(sessionId: ID!): [MemoryEvent!]!
+  
+  # Vector - S3 Vector / Bedrock KB から検索
+  searchVectors(input: VectorQueryInput!): [VectorResult!]!
+  
+  # Graph - Neo4j からノード/エッジ取得
+  getNode(id: ID!): GraphNode
+  getNodes(ids: [ID!]!): [GraphNode!]!
+  queryGraph(input: GraphQueryInput!): GraphQueryResult!
+  
+  # Health Check
+  health: String!
+}
+
+# ==============================================================================
+# Mutation
+# ==============================================================================
+
+type Mutation {
+  # Memory - AgentCore Memory に保存
+  createMemoryEvent(input: MemoryEventInput!): MemoryEvent!
+  deleteMemorySession(sessionId: ID!): Boolean!
+  
+  # Graph - Neo4j にノード/エッジ作成
+  createNode(input: GraphNodeInput!): GraphNode!
+  updateNode(id: ID!, properties: AWSJSON!): GraphNode!
+  deleteNode(id: ID!): Boolean!
+  createEdge(input: GraphEdgeInput!): GraphEdge!
+  deleteEdge(id: ID!): Boolean!
+  
+  # Agent - Multimodal (StrandsAgents + AgentCore)
+  invokeMultimodal(input: MultimodalInput!): AgentResponse!
+  
+  # Agent - Voice (StrandsAgents + AgentCore)
+  sendVoiceText(input: VoiceTextInput!): VoiceResponse!
+}
+
+# ==============================================================================
+# Subscription
+# ==============================================================================
+
+type Subscription {
+  # Voice Dialogue リアルタイム応答
+  # sendVoiceText mutation 実行時に自動発火
+  onVoiceResponse(sessionId: ID!): VoiceResponse
+    @aws_subscribe(mutations: ["sendVoiceText"])
+}
