@@ -1,0 +1,741 @@
+{
+  "auth": {
+    "user_pool_id": "ap-northeast-1_qVKTdstRG",
+    "aws_region": "ap-northeast-1",
+    "user_pool_client_id": "27tgdgakk5hhavddh1c2pjtbpq",
+    "identity_pool_id": "ap-northeast-1:4d98b695-7f90-486f-9fdb-0cc55e769a57",
+    "mfa_methods": [],
+    "standard_required_attributes": [
+      "email"
+    ],
+    "username_attributes": [
+      "email"
+    ],
+    "user_verification_types": [
+      "email"
+    ],
+    "groups": [],
+    "mfa_configuration": "NONE",
+    "password_policy": {
+      "min_length": 8,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_symbols": true,
+      "require_uppercase": true
+    },
+    "unauthenticated_identities_enabled": true
+  },
+  "data": {
+    "url": "https://xume65igfnemxeu3lwjorup3de.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+    "aws_region": "ap-northeast-1",
+    "api_key": "da2-djxjfyzfgbekpfwr74ajscj464",
+    "default_authorization_type": "API_KEY",
+    "authorization_types": [
+      "AMAZON_COGNITO_USER_POOLS",
+      "AWS_IAM"
+    ],
+    "model_introspection": {
+      "version": 1,
+      "models": {},
+      "enums": {},
+      "nonModels": {
+        "MemorySession": {
+          "name": "MemorySession",
+          "fields": {
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "startTime": {
+              "name": "startTime",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "endTime": {
+              "name": "endTime",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "tags": {
+              "name": "tags",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            }
+          }
+        },
+        "MemoryEvent": {
+          "name": "MemoryEvent",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "actorId": {
+              "name": "actorId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "timestamp": {
+              "name": "timestamp",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Vector": {
+          "name": "Vector",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "vector": {
+              "name": "vector",
+              "isArray": true,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Node": {
+          "name": "Node",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "Edge": {
+          "name": "Edge",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "sourceId": {
+              "name": "sourceId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "ImageOutput": {
+          "name": "ImageOutput",
+          "fields": {
+            "base64": {
+              "name": "base64",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "seed": {
+              "name": "seed",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "VideoOutput": {
+          "name": "VideoOutput",
+          "fields": {
+            "url": {
+              "name": "url",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "MultimodalResponse": {
+          "name": "MultimodalResponse",
+          "fields": {
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "images": {
+              "name": "images",
+              "isArray": true,
+              "type": {
+                "nonModel": "ImageOutput"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "videos": {
+              "name": "videos",
+              "isArray": true,
+              "type": {
+                "nonModel": "VideoOutput"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        },
+        "VoiceResponse": {
+          "name": "VoiceResponse",
+          "fields": {
+            "transcript": {
+              "name": "transcript",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "userText": {
+              "name": "userText",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "assistantText": {
+              "name": "assistantText",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "audio": {
+              "name": "audio",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        }
+      },
+      "queries": {
+        "getMemorySession": {
+          "name": "getMemorySession",
+          "isArray": false,
+          "type": {
+            "nonModel": "MemorySession"
+          },
+          "isRequired": false,
+          "arguments": {
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "getMemoryEvents": {
+          "name": "getMemoryEvents",
+          "isArray": true,
+          "type": {
+            "nonModel": "MemoryEvent"
+          },
+          "isRequired": false,
+          "isArrayNullable": true,
+          "arguments": {
+            "actorId": {
+              "name": "actorId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "limit": {
+              "name": "limit",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false
+            }
+          }
+        },
+        "searchVectors": {
+          "name": "searchVectors",
+          "isArray": true,
+          "type": {
+            "nonModel": "Vector"
+          },
+          "isRequired": false,
+          "isArrayNullable": true,
+          "arguments": {
+            "query": {
+              "name": "query",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "k": {
+              "name": "k",
+              "isArray": false,
+              "type": "Int",
+              "isRequired": false
+            },
+            "minScore": {
+              "name": "minScore",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false
+            }
+          }
+        },
+        "getNode": {
+          "name": "getNode",
+          "isArray": false,
+          "type": {
+            "nonModel": "Node"
+          },
+          "isRequired": false,
+          "arguments": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "getNodes": {
+          "name": "getNodes",
+          "isArray": true,
+          "type": {
+            "nonModel": "Node"
+          },
+          "isRequired": false,
+          "isArrayNullable": true,
+          "arguments": {
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "queryGraph": {
+          "name": "queryGraph",
+          "isArray": false,
+          "type": "AWSJSON",
+          "isRequired": false,
+          "arguments": {
+            "cypherQuery": {
+              "name": "cypherQuery",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
+      },
+      "mutations": {
+        "createMemorySession": {
+          "name": "createMemorySession",
+          "isArray": false,
+          "type": {
+            "nonModel": "MemorySession"
+          },
+          "isRequired": false,
+          "arguments": {
+            "title": {
+              "name": "title",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "tags": {
+              "name": "tags",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "isArrayNullable": true
+            }
+          }
+        },
+        "createMemoryEvent": {
+          "name": "createMemoryEvent",
+          "isArray": false,
+          "type": {
+            "nonModel": "MemoryEvent"
+          },
+          "isRequired": false,
+          "arguments": {
+            "actorId": {
+              "name": "actorId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false
+            }
+          }
+        },
+        "deleteMemorySession": {
+          "name": "deleteMemorySession",
+          "isArray": false,
+          "type": "Boolean",
+          "isRequired": false,
+          "arguments": {
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "indexDocument": {
+          "name": "indexDocument",
+          "isArray": false,
+          "type": {
+            "nonModel": "Vector"
+          },
+          "isRequired": false,
+          "arguments": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            },
+            "content": {
+              "name": "content",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false
+            }
+          }
+        },
+        "createNode": {
+          "name": "createNode",
+          "isArray": false,
+          "type": {
+            "nonModel": "Node"
+          },
+          "isRequired": false,
+          "arguments": {
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false
+            }
+          }
+        },
+        "updateNode": {
+          "name": "updateNode",
+          "isArray": false,
+          "type": {
+            "nonModel": "Node"
+          },
+          "isRequired": false,
+          "arguments": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": true
+            }
+          }
+        },
+        "deleteNode": {
+          "name": "deleteNode",
+          "isArray": false,
+          "type": {
+            "nonModel": "Node"
+          },
+          "isRequired": false,
+          "arguments": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "createEdge": {
+          "name": "createEdge",
+          "isArray": false,
+          "type": {
+            "nonModel": "Edge"
+          },
+          "isRequired": false,
+          "arguments": {
+            "sourceId": {
+              "name": "sourceId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "targetId": {
+              "name": "targetId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "properties": {
+              "name": "properties",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false
+            }
+          }
+        },
+        "deleteEdge": {
+          "name": "deleteEdge",
+          "isArray": false,
+          "type": {
+            "nonModel": "Edge"
+          },
+          "isRequired": false,
+          "arguments": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        },
+        "invokeMultimodal": {
+          "name": "invokeMultimodal",
+          "isArray": false,
+          "type": {
+            "nonModel": "MultimodalResponse"
+          },
+          "isRequired": false,
+          "arguments": {
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "prompt": {
+              "name": "prompt",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "image": {
+              "name": "image",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false
+            }
+          }
+        },
+        "sendVoiceText": {
+          "name": "sendVoiceText",
+          "isArray": false,
+          "type": {
+            "nonModel": "VoiceResponse"
+          },
+          "isRequired": false,
+          "arguments": {
+            "sessionId": {
+              "name": "sessionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "text": {
+              "name": "text",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": "1.4"
+}

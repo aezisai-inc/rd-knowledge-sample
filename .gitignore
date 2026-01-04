@@ -74,8 +74,8 @@ dist/
 # =============================================================================
 # Generated artifacts (ignore)
 .amplify/
-amplify_outputs.json
 # Note: app/amplify/ is source code and SHOULD be tracked
+# Note: amplify_outputs.json IS NOW TRACKED for production deployment
 
 # =============================================================================
 # IDE / Editor
