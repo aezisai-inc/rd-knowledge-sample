@@ -135,3 +135,4 @@ temp/
 credentials
 .aws/
 secrets/
+.venv/
