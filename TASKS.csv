@@ -10,3 +10,4 @@ id,task,status,updated_at,notes
 9,S3バケット設定,completed,2026-01-04,vectorsバケット設定 in backend.ts
 10,Amplify sandbox検証,pending,,ローカルでの動作確認
 11,Lambda環境変数設定,completed,2026-01-04,MEMORY_TABLE/SESSION_TABLE/OUTPUT_BUCKET
+12,本番設定対応,completed,2026-01-04,RemovalPolicy.RETAIN/CORS制限/バージョニング有効
