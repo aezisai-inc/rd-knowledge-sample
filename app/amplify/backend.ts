@@ -9,6 +9,10 @@
  * - AgentCore + StrandsAgents + BedrockAPI 構成
  * - DynamoDB（Memory永続化）
  * - S3（Vector保存）
+ *
+ * 環境変数:
+ * - AMPLIFY_ENV: 'sandbox' | 'production' (default: 'production')
+ * - ALLOWED_ORIGINS: CORS許可オリジン (default: 本番ドメイン)
  */
 
 import { defineBackend } from '@aws-amplify/backend';
@@ -36,6 +40,21 @@ const backend = defineBackend({
 const stack = Stack.of(backend.memoryResolver.resources.lambda);
 
 // ========================================
+// Environment Configuration
+// ========================================
+
+// sandbox環境かどうかを判定（ampx sandboxで自動設定される）
+const isSandbox = process.env.AMPLIFY_ENV === 'sandbox' || 
+                  stack.stackName.includes('sandbox');
+
+// CORS許可オリジン（本番では明示的に指定）
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : isSandbox
+    ? ['http://localhost:3000', 'http://localhost:3001'] // sandbox用
+    : ['https://rd-knowledge-sample.amplifyapp.com']; // 本番ドメイン
+
+// ========================================
 // DynamoDB Tables
 // ========================================
 
@@ -45,7 +64,7 @@ const memoryEventsTable = new dynamodb.Table(stack, 'MemoryEventsTable', {
   partitionKey: { name: 'sessionId', type: dynamodb.AttributeType.STRING },
   sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
   billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-  removalPolicy: RemovalPolicy.DESTROY, // Dev only - use RETAIN for production
+  removalPolicy: isSandbox ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
   pointInTimeRecovery: true,
 });
 
@@ -62,7 +81,7 @@ const memorySessionsTable = new dynamodb.Table(stack, 'MemorySessionsTable', {
   tableName: `rd-knowledge-sample-memory-sessions-${stack.stackName}`,
   partitionKey: { name: 'sessionId', type: dynamodb.AttributeType.STRING },
   billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-  removalPolicy: RemovalPolicy.DESTROY, // Dev only - use RETAIN for production
+  removalPolicy: isSandbox ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
   timeToLiveAttribute: 'ttl',
 });
 
@@ -72,16 +91,17 @@ const memorySessionsTable = new dynamodb.Table(stack, 'MemorySessionsTable', {
 
 const vectorBucket = new s3.Bucket(stack, 'VectorBucket', {
   bucketName: `rd-knowledge-sample-vectors-${stack.account}-${stack.region}`,
-  removalPolicy: RemovalPolicy.DESTROY, // Dev only - use RETAIN for production
-  autoDeleteObjects: true, // Dev only - remove for production
-  versioned: false,
+  removalPolicy: isSandbox ? RemovalPolicy.DESTROY : RemovalPolicy.RETAIN,
+  // autoDeleteObjects は sandbox のみ（本番では危険なため無効）
+  autoDeleteObjects: isSandbox,
+  versioned: !isSandbox, // 本番ではバージョニング有効
   encryption: s3.BucketEncryption.S3_MANAGED,
   blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
   cors: [
     {
       allowedHeaders: ['*'],
       allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
-      allowedOrigins: ['*'], // Restrict in production
+      allowedOrigins: allowedOrigins,
       maxAge: 3000,
     },
   ],
