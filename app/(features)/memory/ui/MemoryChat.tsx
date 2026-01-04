@@ -313,7 +313,7 @@ export function MemoryChat() {
     }
   };
 
-  const determineMemoryType = (sources: SourceReference[]): Message['metadata']['memoryType'] => {
+  const determineMemoryType = (sources: SourceReference[]): 'short_term' | 'long_term' | 'episodic' => {
     const hasAgentCore = sources.some(s => s.type === 'agentcore');
     const hasKb = sources.some(s => s.type === 'bedrock_kb');
     
