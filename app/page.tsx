@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { ServiceCard } from "./components/ServiceCard";
-import { MultimodalTester } from "./components/Multimodal";
-import { VoiceDialogueTester } from "./components/Voice";
 import { TestHistory, ResultComparison, type TestResult } from "./components/Dashboard";
+import { MultimodalPanel } from "./(features)/multimodal/ui/MultimodalPanel";
+import { VoicePanel } from "./(features)/voice/ui/VoicePanel";
+import { MemoryChat } from "./(features)/memory/ui/MemoryChat";
 
 interface ServiceStatus {
   service: string;
@@ -245,44 +246,47 @@ export default function Home() {
       <div className="max-w-6xl mx-auto">
         {/* Memory Tab */}
         {activeTab === "memory" && (
-          <>
-            {/* Decision flowchart summary */}
-            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50 mb-6">
-              <h2 className="text-lg font-semibold mb-4 text-slate-200">📋 採用判断クイックガイド</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🧠</span>
-                  <div>
-                    <p className="font-semibold text-white">AgentCore Memory</p>
-                    <p className="text-slate-400">「前回の会話を覚えていてほしい」</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Memory Chat */}
+            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 min-h-[600px]">
+              <MemoryChat />
+            </div>
+            
+            {/* Quick Guide & Service Cards */}
+            <div className="space-y-6">
+              {/* Decision flowchart summary */}
+              <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700/50">
+                <h2 className="text-lg font-semibold mb-4 text-slate-200">📋 採用判断クイックガイド</h2>
+                <div className="space-y-4 text-sm">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🧠</span>
+                    <div>
+                      <p className="font-semibold text-white">AgentCore Memory</p>
+                      <p className="text-slate-400">「前回の会話を覚えていてほしい」</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">📚</span>
-                  <div>
-                    <p className="font-semibold text-white">Bedrock KB</p>
-                    <p className="text-slate-400">「PDF/動画を検索したい」</p>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📚</span>
+                    <div>
+                      <p className="font-semibold text-white">Bedrock KB</p>
+                      <p className="text-slate-400">「PDF/動画を検索したい」</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">🗄️</span>
-                  <div>
-                    <p className="font-semibold text-white">S3 Vectors</p>
-                    <p className="text-slate-400">「100万件を安く保存したい」</p>
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🗄️</span>
+                    <div>
+                      <p className="font-semibold text-white">S3 Vectors</p>
+                      <p className="text-slate-400">「100万件を安く保存したい」</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Service Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {SERVICES.map((service, index) => (
-                <div
-                  key={service.id}
-                  className={`animate-fade-in-up delay-${(index + 1) * 100}`}
-                  style={{ opacity: 0 }}
-                >
+              {/* Service Cards */}
+              <div className="space-y-4">
+                {SERVICES.map((service) => (
                   <ServiceCard
+                    key={service.id}
                     title={service.title}
                     description={service.description}
                     icon={service.icon}
@@ -290,20 +294,24 @@ export default function Home() {
                     operations={service.operations}
                     onTest={handleTest}
                   />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Multimodal Tab */}
         {activeTab === "multimodal" && (
-          <MultimodalTester apiBaseUrl={API_BASE_URL} />
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 min-h-[600px]">
+            <MultimodalPanel />
+          </div>
         )}
 
         {/* Voice Tab */}
         {activeTab === "voice" && (
-          <VoiceDialogueTester apiBaseUrl={API_BASE_URL} />
+          <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 min-h-[600px]">
+            <VoicePanel />
+          </div>
         )}
       </div>
 
