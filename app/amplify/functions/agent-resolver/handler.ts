@@ -130,7 +130,22 @@ export const handler: AppSyncResolverHandler<
 async function invokeMultimodal(args: InvokeMultimodalArgs): Promise<MultimodalResponse> {
   const { sessionId, prompt, image } = args;
 
-  log('INFO', 'Invoking multimodal agent', { sessionId, hasImage: !!image });
+  // プロンプトから制御シグナルを除去（表示用）
+  const cleanPrompt = prompt
+    .replace('[IMAGE_GENERATION]', '')
+    .replace('[VIDEO_GENERATION]', '')
+    .trim();
+
+  const isImageGeneration = shouldGenerateImage(prompt);
+  const isVideoGeneration = shouldGenerateVideo(prompt);
+
+  log('INFO', 'Invoking multimodal agent', { 
+    sessionId, 
+    hasImage: !!image,
+    isImageGeneration,
+    isVideoGeneration,
+    promptLength: prompt.length
+  });
 
   const response: MultimodalResponse = {
     metadata: {
@@ -140,23 +155,34 @@ async function invokeMultimodal(args: InvokeMultimodalArgs): Promise<MultimodalR
   };
 
   try {
-    // Step 1: Nova Pro/Lite で意図解析とテキスト生成
-    const converseResponse = await invokeNovaConverse(prompt, image);
-    response.message = converseResponse;
-
-    // Step 2: 画像生成リクエストの場合は Nova Canvas を使用
-    if (shouldGenerateImage(prompt)) {
-      log('DEBUG', 'Generating image with Nova Canvas');
-      const imageResult = await invokeNovaCanvas(prompt);
-      response.images = imageResult ? [imageResult] : [];
+    // 画像生成モードの場合
+    if (isImageGeneration) {
+      log('INFO', 'Processing image generation request', { cleanPrompt });
+      
+      const imageResult = await invokeNovaCanvas(cleanPrompt);
+      if (imageResult) {
+        response.images = [imageResult];
+        response.message = `「${cleanPrompt}」の画像を生成しました。`;
+      } else {
+        // Nova Canvas が失敗した場合、テキストで説明を生成
+        response.message = `画像生成に失敗しました。Nova Canvas モデルへのアクセスを確認してください。プロンプト: "${cleanPrompt}"`;
+      }
+      return response;
     }
 
-    // Step 3: 動画生成リクエストの場合は Nova Reel を使用
-    if (shouldGenerateVideo(prompt)) {
-      log('DEBUG', 'Generating video with Nova Reel');
+    // 動画生成モードの場合
+    if (isVideoGeneration) {
+      log('INFO', 'Processing video generation request', { cleanPrompt });
+      
       // Nova Reel は非同期処理のため、ステータス URL を返す
       response.videos = [{ url: 'pending://nova-reel-job-id' }];
+      response.message = `動画生成ジョブを開始しました。プロンプト: "${cleanPrompt}"`;
+      return response;
     }
+
+    // 通常の会話/画像解析モード
+    const converseResponse = await invokeNovaConverse(cleanPrompt || prompt, image);
+    response.message = converseResponse;
 
     log('INFO', 'Multimodal response generated', {
       hasMessage: !!response.message,
@@ -404,39 +430,61 @@ function detectImageFormat(bytes: Uint8Array): 'png' | 'jpeg' | 'gif' | 'webp' {
 async function invokeNovaCanvas(
   prompt: string
 ): Promise<{ base64: string; seed: number } | null> {
+  log('INFO', 'Starting Nova Canvas image generation', {
+    modelId: NOVA_CANVAS_MODEL_ID,
+    promptLength: prompt.length,
+  });
+
   try {
+    const requestBody = {
+      taskType: 'TEXT_IMAGE',
+      textToImageParams: {
+        text: prompt,
+      },
+      imageGenerationConfig: {
+        numberOfImages: 1,
+        width: 1024,
+        height: 1024,
+        cfgScale: 8.0,
+      },
+    };
+
+    log('DEBUG', 'Nova Canvas request body', { requestBody });
+
     const command = new InvokeModelCommand({
       modelId: NOVA_CANVAS_MODEL_ID,
       contentType: 'application/json',
       accept: 'application/json',
-      body: JSON.stringify({
-        taskType: 'TEXT_IMAGE',
-        textToImageParams: {
-          text: prompt,
-        },
-        imageGenerationConfig: {
-          numberOfImages: 1,
-          width: 1024,
-          height: 1024,
-          cfgScale: 8.0,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const response = await bedrockClient.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
 
+    log('DEBUG', 'Nova Canvas response', {
+      hasImages: !!responseBody.images,
+      imageCount: responseBody.images?.length || 0,
+    });
+
     if (responseBody.images?.[0]) {
+      log('INFO', 'Nova Canvas image generation successful');
       return {
         base64: responseBody.images[0],
         seed: responseBody.seeds?.[0] || 0,
       };
     }
 
+    log('WARN', 'Nova Canvas returned no images', { responseBody });
     return null;
   } catch (error) {
-    log('WARN', 'Nova Canvas generation failed', {
-      error: error instanceof Error ? error.message : String(error),
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+    
+    log('ERROR', 'Nova Canvas generation failed', {
+      errorName,
+      errorMessage,
+      modelId: NOVA_CANVAS_MODEL_ID,
+      stack: error instanceof Error ? error.stack : undefined,
     });
     return null;
   }
