@@ -1,0 +1,11 @@
+id,task,status,updated_at,notes
+1,RAGチャットUI実装,completed,2026-01-04,MemoryChat.tsx - 対話形式でメモリサービス検証
+2,Cognito認証連携,completed,2026-01-04,ユーザーIDとメモリを紐付け
+3,リアルタイム処理ログ,completed,2026-01-04,どのメモリを参照したか可視化
+4,Memory Source選択UI,completed,2026-01-04,AgentCore/BedrockKB/S3Vectors切替
+5,memory-resolver DynamoDB実装,completed,2026-01-04,placeholder → DynamoDB永続化
+6,agent-api Bedrock実装,completed,2026-01-04,placeholder → Bedrock Nova API呼び出し
+7,RAG参照元ドキュメント表示,completed,2026-01-04,回答に使用した参照元を表示
+8,DynamoDBテーブル作成,pending,,MemoryEvents/MemorySessions テーブル定義
+9,S3バケット設定,pending,,vectorsプレフィックス用バケット設定
+10,Amplify sandbox検証,pending,,ローカルでの動作確認

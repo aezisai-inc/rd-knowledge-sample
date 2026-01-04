@@ -1,20 +1,24 @@
 /**
  * Memory Resolver Lambda Handler
  *
- * AgentCore Memory を使用した会話履歴管理
+ * DynamoDB を使用した会話履歴管理
+ * (AgentCore Memory SDK 正式リリース後に移行予定)
  *
  * 設計原則:
- * - AgentCore + StrandsAgents + BedrockAPI 構成
- * - AgentCore_Observability / CloudTrail 追跡可能
- * - boto3 / cli / script / sh 直接処理禁止
+ * - 12 Factor App Agents 準拠
+ * - CloudTrail / X-Ray 追跡可能
  * - Clean Architecture: Infrastructure 層として Domain 層を呼び出す
  */
 
 import type { AppSyncResolverHandler } from 'aws-lambda';
 import {
-  BedrockAgentRuntimeClient,
-  InvokeAgentCommand,
-} from '@aws-sdk/client-bedrock-agent-runtime';
+  DynamoDBClient,
+  PutItemCommand,
+  QueryCommand,
+  DeleteItemCommand,
+  ScanCommand,
+} from '@aws-sdk/client-dynamodb';
+import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Types aligned with Domain Layer
 interface MemoryEvent {
@@ -70,9 +74,13 @@ type ResolverArgs =
   | CreateMemorySessionArgs;
 
 // Environment
-const AGENTCORE_MEMORY_ID = process.env.AGENTCORE_MEMORY_ID || '';
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
+const MEMORY_TABLE = process.env.MEMORY_TABLE || 'MemoryEvents';
+const SESSION_TABLE = process.env.SESSION_TABLE || 'MemorySessions';
 const LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
+
+// DynamoDB Client
+const dynamoClient = new DynamoDBClient({ region: REGION });
 
 // Observability: Structured logging
 const log = (level: string, message: string, data?: Record<string, unknown>) => {
@@ -88,7 +96,6 @@ const log = (level: string, message: string, data?: Record<string, unknown>) => 
         message,
         ...data,
         service: 'memory-resolver',
-        memoryId: AGENTCORE_MEMORY_ID,
       })
     );
   }
@@ -132,31 +139,63 @@ export const handler: AppSyncResolverHandler<
 };
 
 /**
- * AgentCore Memory からイベント取得
+ * DynamoDB からメモリイベント取得
  */
 async function getMemoryEvents(args: GetMemoryEventsArgs): Promise<MemoryEvent[]> {
   const { actorId, sessionId, limit = 50 } = args;
 
   log('DEBUG', 'Getting memory events', { actorId, sessionId, limit });
 
-  // AgentCore Memory API Integration
-  // TODO: bedrock-agentcore SDK 正式リリース後に実装
-  // 現在は S3Vector ベースの実装を使用
+  try {
+    // セッションIDが指定されている場合はそのセッションのイベントのみ取得
+    if (sessionId) {
+      const command = new QueryCommand({
+        TableName: MEMORY_TABLE,
+        KeyConditionExpression: 'sessionId = :sid',
+        ExpressionAttributeValues: marshall({
+          ':sid': sessionId,
+        }),
+        Limit: limit,
+        ScanIndexForward: true, // 古い順
+      });
 
-  // Placeholder: 実際の実装では AgentCore Memory API を呼び出す
-  const events: MemoryEvent[] = [
-    {
-      id: `event-${Date.now()}`,
-      actorId,
-      sessionId: sessionId || 'default',
-      role: 'ASSISTANT',
-      content: 'AgentCore Memory integration placeholder',
-      timestamp: new Date().toISOString(),
-    },
-  ];
+      const result = await dynamoClient.send(command);
+      const events = (result.Items || []).map((item) => unmarshall(item) as MemoryEvent);
 
-  log('INFO', 'Memory events retrieved', { count: events.length });
-  return events;
+      log('INFO', 'Memory events retrieved by session', { count: events.length, sessionId });
+      return events;
+    }
+
+    // actorIdでフィルター（GSI使用を推奨）
+    const command = new QueryCommand({
+      TableName: MEMORY_TABLE,
+      IndexName: 'actorId-timestamp-index',
+      KeyConditionExpression: 'actorId = :aid',
+      ExpressionAttributeValues: marshall({
+        ':aid': actorId,
+      }),
+      Limit: limit,
+      ScanIndexForward: false, // 新しい順
+    });
+
+    const result = await dynamoClient.send(command);
+    const events = (result.Items || []).map((item) => unmarshall(item) as MemoryEvent);
+
+    log('INFO', 'Memory events retrieved by actor', { count: events.length, actorId });
+    return events;
+  } catch (error) {
+    log('ERROR', 'Failed to get memory events', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しない場合は空の配列を返す
+    if ((error as any).name === 'ResourceNotFoundException') {
+      log('WARN', 'Memory table not found, returning empty array');
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -167,15 +206,44 @@ async function getMemorySession(args: GetMemorySessionArgs): Promise<MemorySessi
 
   log('DEBUG', 'Getting memory session', { sessionId });
 
-  // TODO: AgentCore Memory API でセッション取得
-  const session: MemorySession = {
-    sessionId,
-    startTime: new Date().toISOString(),
-    title: `Session ${sessionId}`,
-    tags: [],
-  };
+  try {
+    const command = new QueryCommand({
+      TableName: SESSION_TABLE,
+      KeyConditionExpression: 'sessionId = :sid',
+      ExpressionAttributeValues: marshall({
+        ':sid': sessionId,
+      }),
+      Limit: 1,
+    });
 
-  return session;
+    const result = await dynamoClient.send(command);
+
+    if (result.Items && result.Items.length > 0) {
+      const session = unmarshall(result.Items[0]) as MemorySession;
+      log('INFO', 'Session found', { sessionId });
+      return session;
+    }
+
+    // セッションが見つからない場合は新規作成
+    log('INFO', 'Session not found, creating new', { sessionId });
+    return await createMemorySession({ title: `Session ${sessionId}` });
+  } catch (error) {
+    log('ERROR', 'Failed to get session', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しない場合はダミーセッションを返す
+    if ((error as any).name === 'ResourceNotFoundException') {
+      return {
+        sessionId,
+        startTime: new Date().toISOString(),
+        title: `Session ${sessionId}`,
+        tags: [],
+      };
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -184,20 +252,38 @@ async function getMemorySession(args: GetMemorySessionArgs): Promise<MemorySessi
 async function createMemorySession(args: CreateMemorySessionArgs): Promise<MemorySession> {
   const { title, tags } = args;
 
-  log('DEBUG', 'Creating memory session', { title, tags });
-
-  const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  // TODO: AgentCore Memory API でセッション作成
+  const sessionId = `sess-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const session: MemorySession = {
     sessionId,
     startTime: new Date().toISOString(),
-    title: title || `New Session`,
+    title: title || 'New Session',
     tags: tags || [],
   };
 
-  log('INFO', 'Memory session created', { sessionId });
-  return session;
+  log('DEBUG', 'Creating memory session', { sessionId, title });
+
+  try {
+    const command = new PutItemCommand({
+      TableName: SESSION_TABLE,
+      Item: marshall(session),
+    });
+
+    await dynamoClient.send(command);
+    log('INFO', 'Memory session created', { sessionId });
+    return session;
+  } catch (error) {
+    log('ERROR', 'Failed to create session', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しなくてもセッションオブジェクトは返す（メモリ内で管理）
+    if ((error as any).name === 'ResourceNotFoundException') {
+      log('WARN', 'Session table not found, returning in-memory session');
+      return session;
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -206,11 +292,8 @@ async function createMemorySession(args: CreateMemorySessionArgs): Promise<Memor
 async function createMemoryEvent(args: CreateMemoryEventArgs): Promise<MemoryEvent> {
   const { actorId, sessionId, role, content, metadata } = args;
 
-  log('DEBUG', 'Creating memory event', { actorId, sessionId, role });
-
-  // TODO: AgentCore Memory API でイベント作成
   const event: MemoryEvent = {
-    id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     actorId,
     sessionId,
     role,
@@ -219,8 +302,30 @@ async function createMemoryEvent(args: CreateMemoryEventArgs): Promise<MemoryEve
     metadata,
   };
 
-  log('INFO', 'Memory event created', { eventId: event.id });
-  return event;
+  log('DEBUG', 'Creating memory event', { actorId, sessionId, role, contentLength: content.length });
+
+  try {
+    const command = new PutItemCommand({
+      TableName: MEMORY_TABLE,
+      Item: marshall(event, { removeUndefinedValues: true }),
+    });
+
+    await dynamoClient.send(command);
+    log('INFO', 'Memory event created', { eventId: event.id, role });
+    return event;
+  } catch (error) {
+    log('ERROR', 'Failed to create event', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しなくてもイベントオブジェクトは返す（ログには記録される）
+    if ((error as any).name === 'ResourceNotFoundException') {
+      log('WARN', 'Memory table not found, returning in-memory event');
+      return event;
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -231,7 +336,46 @@ async function deleteMemorySession(args: DeleteMemorySessionArgs): Promise<boole
 
   log('DEBUG', 'Deleting memory session', { sessionId });
 
-  // TODO: AgentCore Memory API でセッション削除
-  log('INFO', 'Memory session deleted', { sessionId });
-  return true;
+  try {
+    // セッション削除
+    const deleteSessionCommand = new DeleteItemCommand({
+      TableName: SESSION_TABLE,
+      Key: marshall({ sessionId }),
+    });
+    await dynamoClient.send(deleteSessionCommand);
+
+    // 関連イベント削除（セッションに紐づくイベントをすべて削除）
+    const queryCommand = new QueryCommand({
+      TableName: MEMORY_TABLE,
+      KeyConditionExpression: 'sessionId = :sid',
+      ExpressionAttributeValues: marshall({ ':sid': sessionId }),
+    });
+
+    const result = await dynamoClient.send(queryCommand);
+    
+    if (result.Items) {
+      for (const item of result.Items) {
+        const event = unmarshall(item);
+        const deleteEventCommand = new DeleteItemCommand({
+          TableName: MEMORY_TABLE,
+          Key: marshall({ sessionId: event.sessionId, timestamp: event.timestamp }),
+        });
+        await dynamoClient.send(deleteEventCommand);
+      }
+    }
+
+    log('INFO', 'Memory session deleted', { sessionId, eventsDeleted: result.Items?.length || 0 });
+    return true;
+  } catch (error) {
+    log('ERROR', 'Failed to delete session', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しない場合も成功を返す
+    if ((error as any).name === 'ResourceNotFoundException') {
+      return true;
+    }
+
+    throw error;
+  }
 }
