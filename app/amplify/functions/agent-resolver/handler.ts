@@ -45,7 +45,14 @@ interface SendVoiceTextArgs {
   text: string;
 }
 
-type ResolverArgs = InvokeMultimodalArgs | SendVoiceTextArgs;
+interface InvokeVoiceAgentArgs {
+  sessionId: string;
+  text?: string;
+  audio?: string; // Base64 encoded audio
+  mode?: 'TTS' | 'STT' | 'DIALOGUE';
+}
+
+type ResolverArgs = InvokeMultimodalArgs | SendVoiceTextArgs | InvokeVoiceAgentArgs;
 
 // Environment
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
@@ -102,6 +109,8 @@ export const handler: AppSyncResolverHandler<
         return await invokeMultimodal(args as InvokeMultimodalArgs);
       case 'sendVoiceText':
         return await sendVoiceText(args as SendVoiceTextArgs);
+      case 'invokeVoiceAgent':
+        return await invokeVoiceAgent(args as InvokeVoiceAgentArgs);
       default:
         throw new Error(`Unknown field: ${fieldName}`);
     }
@@ -217,34 +226,139 @@ async function sendVoiceText(args: SendVoiceTextArgs): Promise<VoiceResponse> {
 }
 
 /**
- * Nova Pro/Lite Converse API 呼び出し
+ * Voice Agent with audio input support
+ * Supports TTS, STT, and full dialogue modes
+ */
+async function invokeVoiceAgent(args: InvokeVoiceAgentArgs): Promise<VoiceResponse> {
+  const { sessionId, text, audio, mode = 'DIALOGUE' } = args;
+
+  log('INFO', 'Invoking voice agent', { 
+    sessionId, 
+    mode, 
+    hasText: !!text, 
+    hasAudio: !!audio 
+  });
+
+  try {
+    let transcription: string | undefined;
+    let responseText: string | undefined;
+
+    // Step 1: Speech-to-Text if audio provided
+    if (audio && (mode === 'STT' || mode === 'DIALOGUE')) {
+      log('DEBUG', 'Processing audio input for STT');
+      // TODO: Use Nova Sonic or Amazon Transcribe for STT
+      // For now, return placeholder
+      transcription = '(音声認識は開発中です)';
+    }
+
+    // Step 2: Generate response text
+    const inputText = text || transcription || '';
+    if (inputText && (mode === 'TTS' || mode === 'DIALOGUE')) {
+      responseText = await invokeNovaConverse(inputText);
+    }
+
+    // Step 3: Text-to-Speech if needed
+    let responseAudio: string | undefined;
+    if (responseText && (mode === 'TTS' || mode === 'DIALOGUE')) {
+      // TODO: Use Nova Sonic or Amazon Polly for TTS
+      // For now, no audio output
+      log('DEBUG', 'TTS generation skipped (not yet implemented)');
+    }
+
+    const response: VoiceResponse = {
+      transcript: transcription,
+      userText: text,
+      assistantText: responseText || (mode === 'STT' ? '文字起こし完了' : ''),
+      audio: responseAudio,
+      metadata: {
+        sessionId,
+        mode,
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    log('INFO', 'Voice agent response generated', { 
+      sessionId, 
+      hasTranscription: !!transcription,
+      hasResponseText: !!responseText 
+    });
+
+    return response;
+  } catch (error) {
+    log('ERROR', 'Voice agent processing failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    return {
+      assistantText: 'エラーが発生しました。もう一度お試しください。',
+      metadata: {
+        error: true,
+        sessionId,
+        mode,
+      },
+    };
+  }
+}
+
+/**
+ * Nova Pro/Lite Converse API 呼び出し（画像分析対応）
  */
 async function invokeNovaConverse(prompt: string, image?: string): Promise<string> {
-  const messages: Array<{
-    role: 'user' | 'assistant';
-    content: Array<{ text: string } | { image: { format: string; source: { bytes: string } } }>;
-  }> = [
+  // Build message content
+  const content: Array<{ text: string } | { image: { format: 'png' | 'jpeg' | 'gif' | 'webp'; source: { bytes: Uint8Array } } }> = [];
+  
+  // Add text prompt
+  content.push({ text: prompt || 'この画像を詳しく説明してください。' });
+  
+  // Add image if provided (convert Base64 to Uint8Array)
+  if (image) {
+    try {
+      // Decode Base64 to binary
+      const binaryString = atob(image);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Detect image format from first bytes
+      const format = detectImageFormat(bytes);
+      
+      content.push({
+        image: {
+          format,
+          source: { bytes },
+        },
+      });
+      
+      log('DEBUG', 'Image attached to request', { 
+        format, 
+        sizeBytes: bytes.length 
+      });
+    } catch (error) {
+      log('ERROR', 'Failed to decode image', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  }
+
+  const messages = [
     {
-      role: 'user',
-      content: image
-        ? [
-            { text: prompt },
-            {
-              image: {
-                format: 'png',
-                source: { bytes: image },
-              },
-            },
-          ]
-        : [{ text: prompt }],
+      role: 'user' as const,
+      content,
     },
   ];
+
+  log('DEBUG', 'Sending Converse request', { 
+    modelId: TEXT_MODEL_ID,
+    hasImage: !!image,
+    contentParts: content.length
+  });
 
   const command = new ConverseCommand({
     modelId: TEXT_MODEL_ID,
     messages: messages as any,
     inferenceConfig: {
-      maxTokens: 1024,
+      maxTokens: 2048,
       temperature: 0.7,
     },
   });
@@ -257,6 +371,31 @@ async function invokeNovaConverse(prompt: string, image?: string): Promise<strin
   }
 
   return '';
+}
+
+/**
+ * Detect image format from binary data
+ */
+function detectImageFormat(bytes: Uint8Array): 'png' | 'jpeg' | 'gif' | 'webp' {
+  // PNG: 89 50 4E 47
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+    return 'png';
+  }
+  // JPEG: FF D8 FF
+  if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+    return 'jpeg';
+  }
+  // GIF: 47 49 46
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+    return 'gif';
+  }
+  // WebP: 52 49 46 46 ... 57 45 42 50
+  if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+    return 'webp';
+  }
+  // Default to jpeg (most common)
+  return 'jpeg';
 }
 
 /**

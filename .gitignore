@@ -136,3 +136,4 @@ credentials
 .aws/
 secrets/
 .venv/
+amplify_outputs.json
