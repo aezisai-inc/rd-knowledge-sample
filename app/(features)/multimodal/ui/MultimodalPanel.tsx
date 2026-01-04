@@ -1,43 +1,96 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { cn } from '../../../shared/lib/cn';
-import { Button } from '../../../shared/ui/atoms/Button';
-import { Textarea } from '../../../shared/ui/atoms/Textarea';
-import { Spinner } from '../../../shared/ui/atoms/Spinner';
-import { ImagePreview } from '../../../shared/ui/molecules/ImagePreview';
-import { ChatMessage } from '../../../shared/ui/molecules/ChatMessage';
-import {
-  invokeMultimodal,
-  type MultimodalResponse,
-  type ImageOutput,
-} from '../api/multimodal-api';
+import React, { useState, useCallback, useRef } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../amplify/data/resource';
 
-type TabId = 'chat' | 'image' | 'video';
+const client = generateClient<Schema>();
+
+type TabId = 'analyze' | 'generate-image' | 'generate-video';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  images?: ImageOutput[];
+  inputImage?: string; // base64 of uploaded image
+  outputImages?: { base64: string; seed?: number }[];
+  outputVideo?: { status: string; jobId?: string; url?: string };
 }
 
 export function MultimodalPanel() {
-  const [activeTab, setActiveTab] = useState<TabId>('chat');
-  const [sessionId] = useState(() => `session-${Date.now()}`);
+  const [activeTab, setActiveTab] = useState<TabId>('analyze');
+  const [sessionId] = useState(() => `multimodal-${Date.now()}`);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // =============================================================================
+  // Image Upload
+  // =============================================================================
+
+  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('画像ファイルを選択してください');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ファイルサイズは5MB以下にしてください');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      // Remove data:image/xxx;base64, prefix for API
+      const base64Data = base64.split(',')[1];
+      setUploadedImage(base64Data);
+      setUploadedFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const clearUploadedImage = useCallback(() => {
+    setUploadedImage(null);
+    setUploadedFileName(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, []);
+
+  // =============================================================================
+  // Submit Handler
+  // =============================================================================
 
   const handleSubmit = useCallback(async () => {
-    if (!prompt.trim() || isLoading) return;
+    if (isLoading) return;
+    
+    // Validation based on tab
+    if (activeTab === 'analyze' && !prompt.trim() && !uploadedImage) {
+      alert('プロンプトまたは画像をアップロードしてください');
+      return;
+    }
+    if ((activeTab === 'generate-image' || activeTab === 'generate-video') && !prompt.trim()) {
+      alert('生成するコンテンツの説明を入力してください');
+      return;
+    }
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: prompt,
+      content: prompt || (uploadedImage ? '画像を解析してください' : ''),
       timestamp: new Date().toISOString(),
+      inputImage: uploadedImage || undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -46,22 +99,71 @@ export function MultimodalPanel() {
     setIsLoading(true);
 
     try {
-      const response = await invokeMultimodal({
-        sessionId,
-        prompt: currentPrompt,
-      });
+      let assistantMessage: Message;
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response.message || 'Response received',
-        timestamp: new Date().toISOString(),
-        images: response.images?.filter(
-          (img): img is { base64: string; seed?: number } => !!img.base64
-        ),
-      };
+      if (activeTab === 'analyze') {
+        // =============================================================================
+        // Image Analysis (Nova Vision)
+        // =============================================================================
+        const response = await client.mutations.invokeMultimodal({
+          sessionId,
+          prompt: currentPrompt || 'この画像を詳しく説明してください。',
+          image: uploadedImage || undefined,
+        });
+
+        assistantMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response.data?.message || 'No response received',
+          timestamp: new Date().toISOString(),
+        };
+
+      } else if (activeTab === 'generate-image') {
+        // =============================================================================
+        // Image Generation (Nova Canvas)
+        // =============================================================================
+        const response = await client.mutations.invokeMultimodal({
+          sessionId,
+          prompt: `[IMAGE_GENERATION] ${currentPrompt}`,
+        });
+
+        const images = response.data?.images?.filter(
+          (img: any): img is { base64: string; seed?: number } => !!img?.base64
+        ) || [];
+
+        assistantMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response.data?.message || (images.length > 0 ? `${images.length}枚の画像を生成しました` : '画像生成に失敗しました'),
+          timestamp: new Date().toISOString(),
+          outputImages: images.length > 0 ? images : undefined,
+        };
+
+      } else {
+        // =============================================================================
+        // Video Generation (Nova Reel)
+        // =============================================================================
+        const response = await client.mutations.invokeMultimodal({
+          sessionId,
+          prompt: `[VIDEO_GENERATION] ${currentPrompt}`,
+        });
+
+        assistantMessage = {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          content: response.data?.message || '動画生成ジョブを開始しました',
+          timestamp: new Date().toISOString(),
+          outputVideo: response.data?.video ? {
+            status: response.data.video.status || 'PENDING',
+            jobId: response.data.video.jobId,
+            url: response.data.video.url,
+          } : { status: 'PENDING' },
+        };
+      }
 
       setMessages((prev) => [...prev, assistantMessage]);
+      clearUploadedImage();
+
     } catch (error) {
       console.error('Multimodal request failed:', error);
       const errorMessage: Message = {
@@ -74,79 +176,224 @@ export function MultimodalPanel() {
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, sessionId, isLoading]);
+  }, [prompt, sessionId, isLoading, uploadedImage, activeTab, clearUploadedImage]);
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'chat', label: 'Chat' },
-    { id: 'image', label: 'Image Generation' },
-    { id: 'video', label: 'Video Generation' },
+  // =============================================================================
+  // Tab Configuration
+  // =============================================================================
+
+  const tabs: { id: TabId; label: string; icon: string; description: string }[] = [
+    { id: 'analyze', label: '画像解析', icon: '👁️', description: 'Nova Vision' },
+    { id: 'generate-image', label: '画像生成', icon: '🎨', description: 'Nova Canvas' },
+    { id: 'generate-video', label: '動画生成', icon: '🎬', description: 'Nova Reel' },
   ];
+
+  // =============================================================================
+  // Render
+  // =============================================================================
 
   return (
     <div className="h-full flex flex-col">
-      {/* Tab navigation */}
+      {/* Tab Navigation */}
       <div className="flex border-b border-gray-700">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'px-4 py-3 text-sm font-medium transition-colors',
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'text-blue-400 border-b-2 border-blue-400'
-                : 'text-gray-400 hover:text-white'
-            )}
+                ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/10'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+            }`}
           >
+            <span className="text-lg mr-2">{tab.icon}</span>
             {tab.label}
+            <span className="block text-xs text-gray-500">{tab.description}</span>
           </button>
         ))}
       </div>
 
-      {/* Content area */}
+      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div key={message.id}>
-            <ChatMessage
-              role={message.role}
-              content={message.content}
-              timestamp={message.timestamp}
-            />
-            {message.images && message.images.length > 0 && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[80%] ml-auto">
-                {message.images.map((image, idx) => (
-                  <ImagePreview
-                    key={idx}
-                    src={image.base64 || ''}
-                    seed={image.seed || undefined}
-                  />
-                ))}
-              </div>
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-gray-500">
+            {activeTab === 'analyze' ? (
+              <>
+                <p className="text-4xl mb-4">👁️</p>
+                <p className="text-lg font-medium">画像解析</p>
+                <p className="text-sm mt-2">画像をアップロードして、AIに解析してもらいましょう</p>
+              </>
+            ) : activeTab === 'generate-image' ? (
+              <>
+                <p className="text-4xl mb-4">🎨</p>
+                <p className="text-lg font-medium">画像生成</p>
+                <p className="text-sm mt-2">テキストから画像を生成します</p>
+              </>
+            ) : (
+              <>
+                <p className="text-4xl mb-4">🎬</p>
+                <p className="text-lg font-medium">動画生成</p>
+                <p className="text-sm mt-2">テキストから動画を生成します（非同期処理）</p>
+              </>
             )}
           </div>
-        ))}
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-xl p-4 ${
+                  message.role === 'user'
+                    ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-white'
+                    : 'bg-gray-700 text-gray-100'
+                }`}
+              >
+                {/* User's uploaded image */}
+                {message.inputImage && (
+                  <div className="mb-3">
+                    <img
+                      src={`data:image/png;base64,${message.inputImage}`}
+                      alt="Uploaded"
+                      className="max-w-full max-h-64 rounded-lg"
+                    />
+                  </div>
+                )}
+                
+                <p className="whitespace-pre-wrap">{message.content}</p>
+                
+                {/* Generated images */}
+                {message.outputImages && message.outputImages.length > 0 && (
+                  <div className="mt-4 grid grid-cols-1 gap-4">
+                    {message.outputImages.map((img, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={`data:image/png;base64,${img.base64}`}
+                          alt={`Generated ${idx + 1}`}
+                          className="max-w-full rounded-lg"
+                        />
+                        {img.seed && (
+                          <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                            Seed: {img.seed}
+                          </span>
+                        )}
+                        <a
+                          href={`data:image/png;base64,${img.base64}`}
+                          download={`generated-${Date.now()}.png`}
+                          className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
+                        >
+                          💾 保存
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Video generation status */}
+                {message.outputVideo && (
+                  <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        message.outputVideo.status === 'COMPLETED' ? 'bg-green-500' :
+                        message.outputVideo.status === 'FAILED' ? 'bg-red-500' :
+                        'bg-yellow-500 animate-pulse'
+                      }`} />
+                      <span className="text-sm">Status: {message.outputVideo.status}</span>
+                    </div>
+                    {message.outputVideo.jobId && (
+                      <p className="text-xs text-gray-500 mt-1">Job ID: {message.outputVideo.jobId}</p>
+                    )}
+                    {message.outputVideo.url && (
+                      <a
+                        href={message.outputVideo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 text-sm mt-2 inline-block hover:underline"
+                      >
+                        🎬 動画を見る
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-400 mt-2">
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
         {isLoading && (
-          <div className="flex items-center gap-2 text-gray-400">
-            <Spinner size="sm" />
-            <span className="text-sm">Processing with Nova...</span>
+          <div className="flex items-center gap-2 text-gray-400 justify-center py-4">
+            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm">
+              {activeTab === 'analyze' ? '画像を解析中...' :
+               activeTab === 'generate-image' ? '画像を生成中...' :
+               '動画生成ジョブを作成中...'}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Input area */}
+      {/* Input Area */}
       <div className="border-t border-gray-700 p-4">
+        {/* Image Upload (for analyze tab) */}
+        {activeTab === 'analyze' && (
+          <div className="mb-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+              id="image-upload"
+            />
+            
+            {uploadedImage ? (
+              <div className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg">
+                <img
+                  src={`data:image/png;base64,${uploadedImage}`}
+                  alt="Preview"
+                  className="w-16 h-16 object-cover rounded"
+                />
+                <div className="flex-1">
+                  <p className="text-sm text-white truncate">{uploadedFileName}</p>
+                  <p className="text-xs text-gray-400">画像がアップロードされました</p>
+                </div>
+                <button
+                  onClick={clearUploadedImage}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <label
+                htmlFor="image-upload"
+                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-colors"
+              >
+                <span className="text-2xl">📷</span>
+                <span className="text-gray-400">画像をアップロード（クリックまたはドラッグ&ドロップ）</span>
+              </label>
+            )}
+          </div>
+        )}
+
+        {/* Text Input */}
         <div className="flex gap-2">
-          <Textarea
+          <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={
-              activeTab === 'image'
-                ? 'Describe the image to generate...'
-                : activeTab === 'video'
-                ? 'Describe the video to generate...'
-                : 'Send a message to Nova Pro...'
+              activeTab === 'analyze'
+                ? '画像について質問してください（例：「この画像に写っているものは何ですか？」）'
+                : activeTab === 'generate-image'
+                ? '生成したい画像を説明してください（例：「夕焼けの海岸で走る白い馬」）'
+                : '生成したい動画を説明してください（例：「宇宙船が星間を飛行する様子」）'
             }
             disabled={isLoading}
-            className="flex-1 min-h-[60px] max-h-[120px]"
+            className="flex-1 min-h-[60px] max-h-[120px] px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -154,20 +401,29 @@ export function MultimodalPanel() {
               }
             }}
           />
-          <Button
+          <button
             onClick={handleSubmit}
-            disabled={!prompt.trim() || isLoading}
-            className="self-end"
+            disabled={isLoading || (!prompt.trim() && !uploadedImage)}
+            className="self-end px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-500 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
-            {isLoading ? <Spinner size="sm" /> : 'Send'}
-          </Button>
+            {isLoading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : activeTab === 'analyze' ? (
+              '👁️ 解析'
+            ) : activeTab === 'generate-image' ? (
+              '🎨 生成'
+            ) : (
+              '🎬 生成'
+            )}
+          </button>
         </div>
+        
         <p className="mt-2 text-xs text-gray-500">
-          {activeTab === 'image'
-            ? 'Nova Canvas will generate images based on your description'
-            : activeTab === 'video'
-            ? 'Nova Reel will generate videos (async processing)'
-            : 'Nova Pro/Lite for multimodal understanding'}
+          {activeTab === 'analyze'
+            ? 'Nova Vision で画像を解析します。画像+質問、または画像のみ、質問のみでも動作します。'
+            : activeTab === 'generate-image'
+            ? 'Nova Canvas でテキストから画像を生成します。詳細な説明ほど良い結果が得られます。'
+            : 'Nova Reel でテキストから動画を生成します。処理には数分かかる場合があります。'}
         </p>
       </div>
     </div>

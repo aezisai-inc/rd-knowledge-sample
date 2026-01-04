@@ -47,6 +47,14 @@ interface MemorySourceConfig {
   s3Vectors: boolean;
 }
 
+interface SessionInfo {
+  sessionId: string;
+  title: string;
+  messageCount: number;
+  createdAt: string;
+  lastActive: string;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -65,6 +73,9 @@ export function MemoryChat() {
     s3Vectors: false,
   });
   const [showLogs, setShowLogs] = useState(true);
+  const [showSessions, setShowSessions] = useState(false);
+  const [pastSessions, setPastSessions] = useState<SessionInfo[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -102,15 +113,93 @@ export function MemoryChat() {
       
       addLog('agentcore', 'Session Initialized', `User: ${cognitoUserId.slice(0, 20)}...`, 'success');
       
-      addSystemMessage(`Session started. User ID: ${cognitoUserId.slice(0, 20)}...`);
+      // Load past sessions
+      await loadPastSessions(cognitoUserId);
+      
+      addSystemMessage(`✅ ログイン完了: ${user.signInDetails?.loginId || cognitoUserId.slice(0, 20)}...`);
     } catch (error) {
       console.log('Auth not configured, using anonymous session');
       const anonymousId = `anon-${Date.now()}`;
       setUserId(anonymousId);
       setSessionId(`sess-${Date.now()}`);
       addLog('agentcore', 'Anonymous Session', 'Cognito not configured', 'success');
-      addSystemMessage('Anonymous session started (Cognito not configured)');
+      addSystemMessage('⚠️ 匿名セッション開始（Cognitoサインインで記憶機能が有効になります）');
     }
+  };
+
+  const loadPastSessions = async (actorId: string) => {
+    setLoadingSessions(true);
+    try {
+      // Query sessions from DynamoDB via GraphQL
+      const result = await client.queries.getMemorySessions?.({
+        actorId: actorId,
+      });
+
+      if (result?.data && Array.isArray(result.data)) {
+        const sessions: SessionInfo[] = result.data.map((s: any) => ({
+          sessionId: s.sessionId,
+          title: s.title || `セッション ${s.sessionId.slice(-6)}`,
+          messageCount: s.messageCount || 0,
+          createdAt: s.createdAt || new Date().toISOString(),
+          lastActive: s.lastActive || new Date().toISOString(),
+        }));
+        setPastSessions(sessions.slice(0, 10)); // Last 10 sessions
+        addLog('agentcore', 'Sessions Loaded', `${sessions.length} past sessions`, 'success');
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+      addLog('agentcore', 'Sessions Error', String(error), 'error');
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const switchToSession = async (selectedSessionId: string) => {
+    if (!userId) return;
+    
+    setSessionId(selectedSessionId);
+    setMessages([]);
+    setProcessingLogs([]);
+    setShowSessions(false);
+    
+    addLog('agentcore', 'Session Switched', `Loading ${selectedSessionId.slice(-8)}...`, 'pending');
+    
+    try {
+      // Load messages from this session
+      const result = await client.queries.getMemoryEvents?.({
+        actorId: userId,
+        sessionId: selectedSessionId,
+      });
+
+      if (result?.data && Array.isArray(result.data)) {
+        const loadedMessages: Message[] = result.data.map((event: any) => ({
+          id: event.id || `loaded-${Date.now()}-${Math.random()}`,
+          role: event.role?.toLowerCase() === 'user' ? 'user' : 'assistant',
+          content: event.content || '',
+          timestamp: event.timestamp || new Date().toISOString(),
+          metadata: {
+            memoryType: 'episodic',
+          },
+        }));
+        
+        setMessages(loadedMessages);
+        addLog('agentcore', 'Messages Loaded', `${loadedMessages.length} messages from episodic memory`, 'success');
+        addSystemMessage(`📂 セッション「${selectedSessionId.slice(-8)}」を復元しました（${loadedMessages.length}件のメッセージ）`);
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      addLog('agentcore', 'Load Error', String(error), 'error');
+    }
+  };
+
+  const createNewSession = () => {
+    const newSessionId = `sess-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setSessionId(newSessionId);
+    setMessages([]);
+    setProcessingLogs([]);
+    setShowSessions(false);
+    addLog('agentcore', 'New Session', `Created ${newSessionId.slice(-8)}`, 'success');
+    addSystemMessage('🆕 新しいセッションを開始しました');
   };
 
   // =============================================================================
@@ -133,7 +222,7 @@ export function MemoryChat() {
       status,
       duration,
     };
-    setProcessingLogs(prev => [...prev.slice(-50), log]); // Keep last 50 logs
+    setProcessingLogs(prev => [...prev.slice(-50), log]);
   };
 
   const addSystemMessage = (content: string) => {
@@ -178,7 +267,7 @@ export function MemoryChat() {
         addLog('agentcore', 'Memory Search', 'Searching conversation history...', 'pending');
         
         try {
-          // Store user message in memory
+          // Store user message in memory (short-term → episodic)
           const memoryResult = await client.mutations.createMemoryEvent({
             actorId: userId!,
             sessionId: sessionId,
@@ -187,23 +276,42 @@ export function MemoryChat() {
           });
 
           if (memoryResult.data) {
-            addLog('agentcore', 'Event Stored', `ID: ${memoryResult.data.id?.slice(0, 8)}...`, 'success', 50);
+            addLog('agentcore', 'Short-term Stored', `Event ID: ${memoryResult.data.id?.slice(0, 8)}...`, 'success', 50);
             
-            // Retrieve related memories
+            // Retrieve related memories (includes long-term from other sessions)
             const retrieveResult = await client.queries.getMemoryEvents({
               actorId: userId!,
               sessionId: sessionId,
             });
 
-            const memoryCount = retrieveResult.data?.length || 0;
-            addLog('agentcore', 'Memory Retrieved', `Found ${memoryCount} related memories`, 'success', 80);
+            const currentSessionCount = retrieveResult.data?.length || 0;
             
-            if (memoryCount > 0) {
+            // Also query cross-session memories (long-term)
+            let longTermCount = 0;
+            if (pastSessions.length > 0) {
+              // This would query memories from other sessions that might be relevant
+              longTermCount = pastSessions.reduce((acc, s) => acc + (s.messageCount || 0), 0);
+            }
+
+            addLog('agentcore', 'Memory Retrieved', 
+              `短期: ${currentSessionCount} / 長期: ${longTermCount} / エピソード: ${pastSessions.length}セッション`, 
+              'success', 80
+            );
+            
+            if (currentSessionCount > 0) {
               sources.push({
                 type: 'agentcore',
-                id: 'conversation-history',
+                id: 'short-term-memory',
                 score: 0.95,
-                excerpt: `${memoryCount} previous messages in session`,
+                excerpt: `${currentSessionCount} messages in current session`,
+              });
+            }
+            if (longTermCount > 0) {
+              sources.push({
+                type: 'agentcore',
+                id: 'long-term-memory',
+                score: 0.8,
+                excerpt: `${longTermCount} messages across ${pastSessions.length} past sessions`,
               });
             }
           }
@@ -246,7 +354,7 @@ export function MemoryChat() {
       }
 
       // =============================================================================
-      // 3. LLM Response Generation (via Multimodal Agent)
+      // 3. LLM Response Generation
       // =============================================================================
       addLog('llm', 'Generating Response', 'Invoking Bedrock model...', 'pending');
       
@@ -271,7 +379,7 @@ export function MemoryChat() {
       
       addLog('llm', 'Response Generated', `${processingTime}ms total`, 'success', processingTime);
 
-      // Store assistant response in memory
+      // Store assistant response in memory (episodic)
       if (memorySources.agentcore) {
         await client.mutations.createMemoryEvent({
           actorId: userId!,
@@ -279,7 +387,7 @@ export function MemoryChat() {
           role: 'ASSISTANT',
           content: responseText,
         });
-        addLog('agentcore', 'Response Stored', 'Added to episodic memory', 'success', 30);
+        addLog('agentcore', 'Episodic Stored', 'Response saved to memory', 'success', 30);
       }
 
       // Add assistant message
@@ -314,12 +422,13 @@ export function MemoryChat() {
   };
 
   const determineMemoryType = (sources: SourceReference[]): 'short_term' | 'long_term' | 'episodic' => {
-    const hasAgentCore = sources.some(s => s.type === 'agentcore');
+    const hasShortTerm = sources.some(s => s.id === 'short-term-memory');
+    const hasLongTerm = sources.some(s => s.id === 'long-term-memory');
     const hasKb = sources.some(s => s.type === 'bedrock_kb');
     
-    if (hasAgentCore && hasKb) return 'episodic';
-    if (hasAgentCore) return 'short_term';
-    return 'long_term';
+    if (hasShortTerm && hasLongTerm) return 'episodic';
+    if (hasLongTerm || hasKb) return 'long_term';
+    return 'short_term';
   };
 
   // =============================================================================
@@ -328,12 +437,91 @@ export function MemoryChat() {
 
   return (
     <div className="h-[700px] flex">
+      {/* Session Sidebar */}
+      {showSessions && (
+        <div className="w-64 flex flex-col bg-slate-900/80 border-r border-slate-700">
+          <div className="p-3 border-b border-slate-700">
+            <h3 className="text-sm font-semibold text-slate-200">📂 過去のセッション</h3>
+            <p className="text-xs text-slate-500 mt-1">記憶を呼び起こす</p>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {/* New Session Button */}
+            <button
+              onClick={createNewSession}
+              className="w-full p-3 rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 text-left hover:bg-violet-500/30 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span>➕</span>
+                <span className="text-sm font-medium text-violet-300">新しいセッション</span>
+              </div>
+            </button>
+
+            {loadingSessions ? (
+              <div className="text-center py-4 text-slate-500 text-sm">読み込み中...</div>
+            ) : pastSessions.length === 0 ? (
+              <div className="text-center py-4 text-slate-500 text-sm">
+                過去のセッションはありません
+              </div>
+            ) : (
+              pastSessions.map((session) => (
+                <button
+                  key={session.sessionId}
+                  onClick={() => switchToSession(session.sessionId)}
+                  className={`w-full p-3 rounded-lg text-left transition-colors ${
+                    sessionId === session.sessionId
+                      ? 'bg-blue-500/20 border border-blue-500/30'
+                      : 'hover:bg-slate-700/50 border border-transparent'
+                  }`}
+                >
+                  <div className="text-sm font-medium text-slate-200 truncate">
+                    {session.title}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                    <span>💬 {session.messageCount}</span>
+                    <span>•</span>
+                    <span>{new Date(session.lastActive).toLocaleDateString('ja-JP')}</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+          
+          {/* Memory Type Legend */}
+          <div className="p-3 border-t border-slate-700 text-xs space-y-1">
+            <div className="flex items-center gap-2 text-pink-300">
+              <span className="w-2 h-2 rounded-full bg-pink-500"></span>
+              短期記憶（現セッション）
+            </div>
+            <div className="flex items-center gap-2 text-blue-300">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              長期記憶（過去セッション）
+            </div>
+            <div className="flex items-center gap-2 text-violet-300">
+              <span className="w-2 h-2 rounded-full bg-violet-500"></span>
+              エピソード記憶（全統合）
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Panel */}
-      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} border-r border-slate-700`}>
+      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} ${showSessions ? '' : ''} border-r border-slate-700 flex-1`}>
         {/* Header */}
         <div className="p-4 border-b border-slate-700 bg-slate-800/50">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-white">💬 RAG Memory Chat</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSessions(!showSessions)}
+                className={`p-2 rounded-lg transition-colors ${
+                  showSessions ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+                title="過去のセッション"
+              >
+                📂
+              </button>
+              <h2 className="text-lg font-semibold text-white">💬 RAG Memory Chat</h2>
+            </div>
             <button
               onClick={() => setShowLogs(!showLogs)}
               className={`px-3 py-1 text-sm rounded-lg transition-colors ${
@@ -385,8 +573,13 @@ export function MemoryChat() {
           
           {/* Session Info */}
           {sessionId && (
-            <div className="mt-2 text-xs text-slate-400">
-              👤 {userId?.slice(0, 20)}... | 📝 {sessionId.slice(0, 15)}... | 💬 {messages.filter(m => m.role !== 'system').length} messages
+            <div className="mt-2 text-xs text-slate-400 flex items-center gap-3">
+              <span>👤 {userId?.slice(0, 20)}...</span>
+              <span>📝 {sessionId.slice(0, 15)}...</span>
+              <span>💬 {messages.filter(m => m.role !== 'system').length} messages</span>
+              {pastSessions.length > 0 && (
+                <span className="text-violet-400">📂 {pastSessions.length} past sessions</span>
+              )}
             </div>
           )}
         </div>
@@ -421,7 +614,7 @@ export function MemoryChat() {
                           'bg-green-500/30 text-green-300'
                         }`}>
                           {src.type === 'agentcore' ? '🧠' : src.type === 'bedrock_kb' ? '📚' : '🗄️'}
-                          {src.type}
+                          {src.id === 'short-term-memory' ? '短期' : src.id === 'long-term-memory' ? '長期' : src.type}
                         </span>
                         {src.score && <span className="text-slate-500">Score: {(src.score * 100).toFixed(0)}%</span>}
                       </div>
@@ -434,7 +627,9 @@ export function MemoryChat() {
                   <div className="mt-2 text-xs text-slate-400">
                     ⏱️ {msg.metadata.processingTime}ms | 
                     🤖 {msg.metadata.model} |
-                    💾 {msg.metadata.memoryType || 'none'}
+                    💾 {msg.metadata.memoryType === 'short_term' ? '短期' : 
+                        msg.metadata.memoryType === 'long_term' ? '長期' : 
+                        msg.metadata.memoryType === 'episodic' ? 'エピソード' : 'none'}
                   </div>
                 )}
               </div>

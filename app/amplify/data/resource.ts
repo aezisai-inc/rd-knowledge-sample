@@ -21,6 +21,9 @@ const schema = a.schema({
     endTime: a.string(),
     title: a.string(),
     tags: a.string().array(),
+    messageCount: a.integer(),
+    lastActive: a.string(),
+    createdAt: a.string(),
   }),
 
   MemoryEvent: a.customType({
@@ -69,20 +72,21 @@ const schema = a.schema({
   }),
 
   VideoOutput: a.customType({
+    status: a.string(),
+    jobId: a.string(),
     url: a.string(),
   }),
 
   MultimodalResponse: a.customType({
     message: a.string(),
     images: a.ref('ImageOutput').array(),
-    videos: a.ref('VideoOutput').array(),
+    video: a.ref('VideoOutput'),
     metadata: a.json(),
   }),
 
   VoiceResponse: a.customType({
-    transcript: a.string(),
-    userText: a.string(),
-    assistantText: a.string(),
+    transcription: a.string(),
+    text: a.string(),
     audio: a.string(),
     metadata: a.json(),
   }),
@@ -94,6 +98,17 @@ const schema = a.schema({
     .query()
     .arguments({ sessionId: a.string().required() })
     .returns(a.ref('MemorySession'))
+    .handler(a.handler.function(memoryResolver))
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // Get all sessions for a user (for session history)
+  getMemorySessions: a
+    .query()
+    .arguments({
+      actorId: a.string().required(),
+      limit: a.integer(),
+    })
+    .returns(a.ref('MemorySession').array())
     .handler(a.handler.function(memoryResolver))
     .authorization((allow) => [allow.publicApiKey()]),
 
@@ -252,6 +267,19 @@ const schema = a.schema({
     .arguments({
       sessionId: a.string().required(),
       text: a.string().required(),
+    })
+    .returns(a.ref('VoiceResponse'))
+    .handler(a.handler.function(agentResolver))
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  // Voice Agent with audio input support
+  invokeVoiceAgent: a
+    .mutation()
+    .arguments({
+      sessionId: a.string().required(),
+      text: a.string(),
+      audio: a.string(),
+      mode: a.string(), // 'TTS' | 'STT' | 'DIALOGUE'
     })
     .returns(a.ref('VoiceResponse'))
     .handler(a.handler.function(agentResolver))
