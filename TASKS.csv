@@ -6,6 +6,7 @@ id,task,status,updated_at,notes
 5,memory-resolver DynamoDB実装,completed,2026-01-04,placeholder → DynamoDB永続化
 6,agent-api Bedrock実装,completed,2026-01-04,placeholder → Bedrock Nova API呼び出し
 7,RAG参照元ドキュメント表示,completed,2026-01-04,回答に使用した参照元を表示
-8,DynamoDBテーブル作成,pending,,MemoryEvents/MemorySessions テーブル定義
-9,S3バケット設定,pending,,vectorsプレフィックス用バケット設定
+8,DynamoDBテーブル作成,completed,2026-01-04,MemoryEvents/MemorySessions テーブル定義 in backend.ts
+9,S3バケット設定,completed,2026-01-04,vectorsバケット設定 in backend.ts
 10,Amplify sandbox検証,pending,,ローカルでの動作確認
+11,Lambda環境変数設定,completed,2026-01-04,MEMORY_TABLE/SESSION_TABLE/OUTPUT_BUCKET
