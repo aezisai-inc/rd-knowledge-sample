@@ -175,17 +175,22 @@ backend.memoryResolver.resources.lambda.addToRolePolicy(dynamoPolicy);
 backend.graphResolver.resources.lambda.addToRolePolicy(dynamoPolicy);
 
 // ========================================
-// Environment Variables
+// Environment Variables (via CfnFunction)
 // ========================================
 
-// Memory Resolver
-backend.memoryResolver.resources.lambda.addEnvironment('MEMORY_TABLE', memoryEventsTable.tableName);
-backend.memoryResolver.resources.lambda.addEnvironment('SESSION_TABLE', memorySessionsTable.tableName);
+// Get underlying CloudFormation functions
+const memoryResolverCfn = backend.memoryResolver.resources.cfnResources.cfnFunction;
+const vectorResolverCfn = backend.vectorResolver.resources.cfnResources.cfnFunction;
+const agentResolverCfn = backend.agentResolver.resources.cfnResources.cfnFunction;
 
-// Vector Resolver
-backend.vectorResolver.resources.lambda.addEnvironment('OUTPUT_BUCKET', vectorBucket.bucketName);
+// Memory Resolver: DynamoDB table names
+memoryResolverCfn.addPropertyOverride('Environment.Variables.MEMORY_TABLE', memoryEventsTable.tableName);
+memoryResolverCfn.addPropertyOverride('Environment.Variables.SESSION_TABLE', memorySessionsTable.tableName);
 
-// Agent Resolver
-backend.agentResolver.resources.lambda.addEnvironment('OUTPUT_BUCKET', vectorBucket.bucketName);
+// Vector Resolver: S3 bucket name
+vectorResolverCfn.addPropertyOverride('Environment.Variables.OUTPUT_BUCKET', vectorBucket.bucketName);
+
+// Agent Resolver: S3 bucket name
+agentResolverCfn.addPropertyOverride('Environment.Variables.OUTPUT_BUCKET', vectorBucket.bucketName);
 
 export default backend;
