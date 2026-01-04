@@ -447,6 +447,7 @@ async function invokeNovaCanvas(
  */
 function shouldGenerateImage(prompt: string): boolean {
   const imageKeywords = [
+    '[IMAGE_GENERATION]', // フロントエンドからのシグナル
     '画像を生成',
     '画像を作成',
     'generate image',
@@ -464,6 +465,7 @@ function shouldGenerateImage(prompt: string): boolean {
  */
 function shouldGenerateVideo(prompt: string): boolean {
   const videoKeywords = [
+    '[VIDEO_GENERATION]', // フロントエンドからのシグナル
     '動画を生成',
     '動画を作成',
     'generate video',
