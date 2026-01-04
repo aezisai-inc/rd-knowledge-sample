@@ -66,12 +66,17 @@ interface CreateMemorySessionArgs {
   tags?: string[];
 }
 
+interface ListMemorySessionsArgs {
+  limit?: number;
+}
+
 type ResolverArgs =
   | GetMemoryEventsArgs
   | CreateMemoryEventArgs
   | GetMemorySessionArgs
   | DeleteMemorySessionArgs
-  | CreateMemorySessionArgs;
+  | CreateMemorySessionArgs
+  | ListMemorySessionsArgs;
 
 // Environment
 const REGION = process.env.AWS_REGION || 'ap-northeast-1';
@@ -103,7 +108,7 @@ const log = (level: string, message: string, data?: Record<string, unknown>) => 
 
 export const handler: AppSyncResolverHandler<
   ResolverArgs,
-  MemoryEvent | MemoryEvent[] | MemorySession | boolean
+  MemoryEvent | MemoryEvent[] | MemorySession | MemorySession[] | boolean
 > = async (event) => {
   // Amplify Gen2 handler structure: fieldName is directly on event
   const fieldName = (event as any).fieldName || event.info?.fieldName;
@@ -120,6 +125,9 @@ export const handler: AppSyncResolverHandler<
         return await getMemoryEvents(args as GetMemoryEventsArgs);
       case 'getMemorySession':
         return await getMemorySession(args as GetMemorySessionArgs);
+      case 'listMemorySessions':
+      case 'getMemorySessions':
+        return await listMemorySessions(args as ListMemorySessionsArgs);
       case 'createMemorySession':
         return await createMemorySession(args as CreateMemorySessionArgs);
       case 'createMemoryEvent':
@@ -191,6 +199,43 @@ async function getMemoryEvents(args: GetMemoryEventsArgs): Promise<MemoryEvent[]
     // テーブルが存在しない場合は空の配列を返す
     if ((error as any).name === 'ResourceNotFoundException') {
       log('WARN', 'Memory table not found, returning empty array');
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * 全セッション一覧取得
+ */
+async function listMemorySessions(args: ListMemorySessionsArgs): Promise<MemorySession[]> {
+  const { limit = 50 } = args;
+
+  log('DEBUG', 'Listing memory sessions', { limit });
+
+  try {
+    const command = new ScanCommand({
+      TableName: SESSION_TABLE,
+      Limit: limit,
+    });
+
+    const result = await dynamoClient.send(command);
+    const sessions = (result.Items || []).map((item) => unmarshall(item) as MemorySession);
+
+    // 開始時刻で降順ソート（新しい順）
+    sessions.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+
+    log('INFO', 'Sessions listed', { count: sessions.length });
+    return sessions;
+  } catch (error) {
+    log('ERROR', 'Failed to list sessions', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    // テーブルが存在しない場合は空の配列を返す
+    if ((error as any).name === 'ResourceNotFoundException') {
+      log('WARN', 'Session table not found, returning empty array');
       return [];
     }
 

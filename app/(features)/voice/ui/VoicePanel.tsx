@@ -153,7 +153,7 @@ export function VoicePanel() {
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: response?.data?.text || 'No response',
+        content: response?.data?.assistantText || 'No response',
         timestamp: new Date().toISOString(),
         audio: response?.data?.audio || undefined,
       };
@@ -202,22 +202,22 @@ export function VoicePanel() {
         });
 
         // Add transcription message if available
-        if (response?.data?.transcription) {
+        if (response?.data?.transcript) {
           const transcriptionMessage: Message = {
             id: `transcription-${Date.now()}`,
             role: 'system',
-            content: `📝 文字起こし: "${response.data.transcription}"`,
+            content: `📝 文字起こし: "${response.data.transcript}"`,
             timestamp: new Date().toISOString(),
           };
           setMessages(prev => [...prev, transcriptionMessage]);
         }
 
         // Add assistant response
-        if (response?.data?.text || response?.data?.audio) {
+        if (response?.data?.assistantText || response?.data?.audio) {
           const assistantMessage: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: response.data.text || '音声応答',
+            content: response.data.assistantText || '音声応答',
             timestamp: new Date().toISOString(),
             audio: response.data.audio || undefined,
           };

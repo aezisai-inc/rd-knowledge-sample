@@ -85,8 +85,9 @@ const schema = a.schema({
   }),
 
   VoiceResponse: a.customType({
-    transcription: a.string(),
-    text: a.string(),
+    transcript: a.string(),
+    userText: a.string(),
+    assistantText: a.string(),
     audio: a.string(),
     metadata: a.json(),
   }),
