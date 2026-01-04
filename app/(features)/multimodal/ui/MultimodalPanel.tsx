@@ -155,8 +155,8 @@ export function MultimodalPanel() {
           timestamp: new Date().toISOString(),
           outputVideo: response.data?.video ? {
             status: response.data.video.status || 'PENDING',
-            jobId: response.data.video.jobId,
-            url: response.data.video.url,
+            jobId: response.data.video.jobId ?? undefined,
+            url: response.data.video.url ?? undefined,
           } : { status: 'PENDING' },
         };
       }
