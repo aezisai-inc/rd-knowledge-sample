@@ -17,6 +17,7 @@ import {
   QueryCommand,
   DeleteItemCommand,
   ScanCommand,
+  AttributeValue,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 
@@ -168,7 +169,7 @@ async function getMemoryEvents(args: GetMemoryEventsArgs): Promise<MemoryEvent[]
       });
 
       const result = await dynamoClient.send(command);
-      const events = (result.Items || []).map((item) => unmarshall(item) as MemoryEvent);
+      const events = (result.Items || []).map((item: Record<string, AttributeValue>) => unmarshall(item) as MemoryEvent);
 
       log('INFO', 'Memory events retrieved by session', { count: events.length, sessionId });
       return events;
@@ -187,7 +188,7 @@ async function getMemoryEvents(args: GetMemoryEventsArgs): Promise<MemoryEvent[]
     });
 
     const result = await dynamoClient.send(command);
-    const events = (result.Items || []).map((item) => unmarshall(item) as MemoryEvent);
+    const events = (result.Items || []).map((item: Record<string, AttributeValue>) => unmarshall(item) as MemoryEvent);
 
     log('INFO', 'Memory events retrieved by actor', { count: events.length, actorId });
     return events;
@@ -221,10 +222,10 @@ async function listMemorySessions(args: ListMemorySessionsArgs): Promise<MemoryS
     });
 
     const result = await dynamoClient.send(command);
-    const sessions = (result.Items || []).map((item) => unmarshall(item) as MemorySession);
+    const sessions = (result.Items || []).map((item: Record<string, AttributeValue>) => unmarshall(item) as MemorySession);
 
     // 開始時刻で降順ソート（新しい順）
-    sessions.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    sessions.sort((a: MemorySession, b: MemorySession) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
     log('INFO', 'Sessions listed', { count: sessions.length });
     return sessions;
