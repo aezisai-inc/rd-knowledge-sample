@@ -8,6 +8,9 @@ applications:
             - npm ci
         build:
           commands:
+            # Deploy Amplify Gen2 backend (Lambda, AppSync, DynamoDB, etc.)
+            - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+            # Build Next.js frontend
             - npm run build
       artifacts:
         baseDirectory: .next
