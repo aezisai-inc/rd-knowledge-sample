@@ -52,7 +52,10 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : isSandbox
     ? ['http://localhost:3000', 'http://localhost:3001'] // sandbox用
-    : ['https://rd-knowledge-sample.amplifyapp.com']; // 本番ドメイン
+    : [
+        'https://main.d1i9yb01v69hs1.amplifyapp.com', // 本番ドメイン（Amplify Hosting）
+        'https://rd-knowledge-sample.amplifyapp.com', // 予備ドメイン
+      ];
 
 // ========================================
 // DynamoDB Tables
