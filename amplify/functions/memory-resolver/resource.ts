@@ -11,4 +11,7 @@ export const memoryResolver = defineFunction({
     OUTPUT_BUCKET: process.env.OUTPUT_BUCKET || '',
     LOG_LEVEL: process.env.LOG_LEVEL || 'INFO',
   },
+  bundling: {
+    externalModules: ['@aws-sdk/*'], // AWS SDK is included in Lambda runtime
+  },
 });
