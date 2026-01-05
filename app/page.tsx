@@ -80,9 +80,10 @@ export default function Home() {
   const checkAvailability = async () => {
     setLoading(true);
     try {
-      // In real implementation, call the Lambda function
-      // For demo, simulate availability check
-      const mockStatus: ServiceStatus[] = [
+      // サービス可用性表示（UI表示用の静的ステータス）
+      // 実際のサービス可用性は各パネル（MemoryChat, MultimodalPanel, VoicePanel）で
+      // GraphQL経由で検証される
+      const serviceStatuses: ServiceStatus[] = [
         { service: "bedrock-agentcore-control", available: true },
         { service: "bedrock-agentcore", available: true },
         { service: "bedrock-agent", available: true },
@@ -91,7 +92,7 @@ export default function Home() {
       ];
 
       const status: Record<string, boolean> = {};
-      mockStatus.forEach((s) => {
+      serviceStatuses.forEach((s) => {
         status[s.service] = s.available;
       });
       setServiceStatus(status);
