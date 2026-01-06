@@ -437,7 +437,7 @@ export function MemoryChat() {
   // =============================================================================
 
   return (
-    <div className="h-[700px] flex">
+    <div className="h-[700px] flex bg-gray-50">
       {/* Session Sidebar */}
       {showSessions && (
         <div className="w-64 flex flex-col bg-white border-r border-gray-200">
@@ -450,11 +450,11 @@ export function MemoryChat() {
             {/* New Session Button */}
             <button
               onClick={createNewSession}
-              className="w-full p-3 rounded-lg bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 text-left hover:bg-violet-500/30 transition-colors"
+              className="w-full p-3 rounded-lg bg-blue-50 border border-blue-200 text-left hover:bg-blue-100 transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span>➕</span>
-                <span className="text-sm font-medium text-violet-300">新しいセッション</span>
+                <span className="text-sm font-medium text-blue-700">新しいセッション</span>
               </div>
             </button>
 
@@ -471,7 +471,7 @@ export function MemoryChat() {
                   onClick={() => switchToSession(session.sessionId)}
                   className={`w-full p-3 rounded-lg text-left transition-colors ${
                     sessionId === session.sessionId
-                      ? 'bg-blue-500/20 border border-blue-500/30'
+                      ? 'bg-blue-100 border border-blue-300'
                       : 'hover:bg-gray-100 border border-transparent'
                   }`}
                 >
@@ -489,16 +489,16 @@ export function MemoryChat() {
           </div>
           
           {/* Memory Type Legend */}
-          <div className="p-3 border-t border-gray-200 text-xs space-y-1">
-            <div className="flex items-center gap-2 text-pink-300">
+          <div className="p-3 border-t border-gray-200 text-xs space-y-1 bg-gray-50">
+            <div className="flex items-center gap-2 text-pink-600">
               <span className="w-2 h-2 rounded-full bg-pink-500"></span>
               短期記憶（現セッション）
             </div>
-            <div className="flex items-center gap-2 text-blue-300">
+            <div className="flex items-center gap-2 text-blue-600">
               <span className="w-2 h-2 rounded-full bg-blue-500"></span>
               長期記憶（過去セッション）
             </div>
-            <div className="flex items-center gap-2 text-violet-300">
+            <div className="flex items-center gap-2 text-violet-600">
               <span className="w-2 h-2 rounded-full bg-violet-500"></span>
               エピソード記憶（全統合）
             </div>
@@ -507,15 +507,15 @@ export function MemoryChat() {
       )}
 
       {/* Chat Panel */}
-      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} ${showSessions ? '' : ''} border-r border-gray-200 flex-1`}>
+      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} border-r border-gray-200 flex-1 bg-white`}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 bg-white/50">
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSessions(!showSessions)}
                 className={`p-2 rounded-lg transition-colors ${
-                  showSessions ? 'bg-blue-500 text-gray-900' : 'bg-gray-100 text-gray-700 hover:bg-slate-600'
+                  showSessions ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
                 title="過去のセッション"
               >
@@ -526,7 +526,7 @@ export function MemoryChat() {
             <button
               onClick={() => setShowLogs(!showLogs)}
               className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                showLogs ? 'bg-violet-500 text-gray-900' : 'bg-gray-100 text-gray-700'
+                showLogs ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               📊 {showLogs ? 'Hide Logs' : 'Show Logs'}
@@ -536,7 +536,7 @@ export function MemoryChat() {
           {/* Memory Source Selection */}
           <div className="flex flex-wrap gap-2">
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.agentcore ? 'bg-pink-500/20 border-pink-500/50' : 'bg-gray-100 border-gray-300'
+              memorySources.agentcore ? 'bg-pink-100 border-pink-400' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -544,11 +544,11 @@ export function MemoryChat() {
                 onChange={(e) => setMemorySources(prev => ({ ...prev, agentcore: e.target.checked }))}
                 className="accent-pink-500"
               />
-              <span className="text-pink-300">🧠 AgentCore</span>
+              <span className="text-pink-700">🧠 AgentCore</span>
             </label>
             
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.bedrockKb ? 'bg-blue-500/20 border-blue-500/50' : 'bg-gray-100 border-gray-300'
+              memorySources.bedrockKb ? 'bg-blue-100 border-blue-400' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -556,11 +556,11 @@ export function MemoryChat() {
                 onChange={(e) => setMemorySources(prev => ({ ...prev, bedrockKb: e.target.checked }))}
                 className="accent-blue-500"
               />
-              <span className="text-blue-300">📚 Bedrock KB</span>
+              <span className="text-blue-700">📚 Bedrock KB</span>
             </label>
             
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.s3Vectors ? 'bg-green-500/20 border-green-500/50' : 'bg-gray-100 border-gray-300'
+              memorySources.s3Vectors ? 'bg-green-100 border-green-400' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -568,7 +568,7 @@ export function MemoryChat() {
                 onChange={(e) => setMemorySources(prev => ({ ...prev, s3Vectors: e.target.checked }))}
                 className="accent-green-500"
               />
-              <span className="text-green-300">🗄️ S3 Vectors</span>
+              <span className="text-green-700">🗄️ S3 Vectors</span>
             </label>
           </div>
           
@@ -579,14 +579,14 @@ export function MemoryChat() {
               <span>📝 {sessionId.slice(0, 15)}...</span>
               <span>💬 {messages.filter(m => m.role !== 'system').length} messages</span>
               {pastSessions.length > 0 && (
-                <span className="text-violet-400">📂 {pastSessions.length} past sessions</span>
+                <span className="text-violet-600">📂 {pastSessions.length} past sessions</span>
               )}
             </div>
           )}
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -595,24 +595,24 @@ export function MemoryChat() {
               <div
                 className={`max-w-[85%] rounded-xl px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-gray-900'
+                    ? 'bg-blue-500 text-white'
                     : msg.role === 'system'
-                    ? 'bg-gray-100 text-gray-500 text-sm italic'
-                    : 'bg-gray-100 text-slate-100'
+                    ? 'bg-gray-200 text-gray-600 text-sm italic'
+                    : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>
                 
                 {/* Source References */}
                 {msg.metadata?.sources && msg.metadata.sources.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+                  <div className="mt-3 pt-3 border-t border-gray-200 space-y-1">
                     <p className="text-xs text-gray-500 font-medium">📎 参照元:</p>
                     {msg.metadata.sources.map((src, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-xs">
                         <span className={`px-1.5 py-0.5 rounded ${
-                          src.type === 'agentcore' ? 'bg-pink-500/30 text-pink-300' :
-                          src.type === 'bedrock_kb' ? 'bg-blue-500/30 text-blue-300' :
-                          'bg-green-500/30 text-green-300'
+                          src.type === 'agentcore' ? 'bg-pink-100 text-pink-700' :
+                          src.type === 'bedrock_kb' ? 'bg-blue-100 text-blue-700' :
+                          'bg-green-100 text-green-700'
                         }`}>
                           {src.type === 'agentcore' ? '🧠' : src.type === 'bedrock_kb' ? '📚' : '🗄️'}
                           {src.id === 'short-term-memory' ? '短期' : src.id === 'long-term-memory' ? '長期' : src.type}
@@ -640,7 +640,7 @@ export function MemoryChat() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white/30">
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
           <div className="flex gap-2">
             <input
               type="text"
@@ -648,12 +648,12 @@ export function MemoryChat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="メッセージを入力... (RAG + Memory で回答します)"
               disabled={isLoading || !sessionId}
-              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim() || !sessionId}
-              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-gray-900 font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              className="px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? '⏳' : '送信'}
             </button>
@@ -663,8 +663,8 @@ export function MemoryChat() {
 
       {/* Processing Logs Panel */}
       {showLogs && (
-        <div className="w-1/3 flex flex-col bg-gray-50/50">
-          <div className="p-3 border-b border-gray-200 bg-white/50">
+        <div className="w-1/3 flex flex-col bg-gray-50">
+          <div className="p-3 border-b border-gray-200 bg-white">
             <h3 className="text-sm font-semibold text-gray-700">📊 Processing Logs</h3>
             <p className="text-xs text-gray-500 mt-1">Real-time processing status</p>
           </div>
@@ -673,10 +673,10 @@ export function MemoryChat() {
             {processingLogs.map((log) => (
               <div
                 key={log.id}
-                className={`p-2 rounded ${
-                  log.status === 'pending' ? 'bg-yellow-500/10 border-l-2 border-yellow-500' :
-                  log.status === 'success' ? 'bg-green-500/10 border-l-2 border-green-500' :
-                  'bg-red-500/10 border-l-2 border-red-500'
+                className={`p-2 rounded bg-white border-l-2 ${
+                  log.status === 'pending' ? 'border-yellow-500' :
+                  log.status === 'success' ? 'border-green-500' :
+                  'border-red-500'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -686,10 +686,10 @@ export function MemoryChat() {
                     'bg-red-500'
                   }`} />
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                    log.source === 'agentcore' ? 'bg-pink-500/30 text-pink-300' :
-                    log.source === 'bedrock_kb' ? 'bg-blue-500/30 text-blue-300' :
-                    log.source === 's3_vectors' ? 'bg-green-500/30 text-green-300' :
-                    'bg-violet-500/30 text-violet-300'
+                    log.source === 'agentcore' ? 'bg-pink-100 text-pink-700' :
+                    log.source === 'bedrock_kb' ? 'bg-blue-100 text-blue-700' :
+                    log.source === 's3_vectors' ? 'bg-green-100 text-green-700' :
+                    'bg-violet-100 text-violet-700'
                   }`}>
                     {log.source}
                   </span>
@@ -697,7 +697,7 @@ export function MemoryChat() {
                 </div>
                 <p className="text-gray-500 mt-1 ml-4">{log.details}</p>
                 {log.duration && (
-                  <p className="text-gray-500 mt-0.5 ml-4">⏱️ {log.duration}ms</p>
+                  <p className="text-gray-400 mt-0.5 ml-4">⏱️ {log.duration}ms</p>
                 )}
               </div>
             ))}
