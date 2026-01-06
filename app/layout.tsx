@@ -1,8 +1,10 @@
 "use client";
 
+// Amplify設定を最初にインポート（モジュールレベルで設定が実行される）
+import "./lib/amplify-config";
+
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ConfigureAmplify } from "./components/ConfigureAmplify";
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 
@@ -28,7 +30,6 @@ export default function RootLayout({
         <meta name="description" content="Test and compare AWS memory services: AgentCore Memory, Bedrock KB, S3 Vectors" />
       </head>
       <body className="bg-slate-950 text-slate-100 min-h-screen">
-        <ConfigureAmplify />
         <Authenticator
           hideSignUp={false}
           components={{
