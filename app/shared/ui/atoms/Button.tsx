@@ -16,11 +16,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: 'bg-cyan-500 text-slate-950 hover:bg-cyan-400 focus-visible:ring-cyan-500',
-        secondary: 'bg-slate-700 text-slate-100 hover:bg-slate-600 focus-visible:ring-slate-500',
-        outline: 'border-2 border-slate-600 bg-transparent text-slate-100 hover:bg-slate-800 hover:border-slate-500',
-        ghost: 'bg-transparent text-slate-300 hover:bg-slate-800 hover:text-slate-100',
-        danger: 'bg-red-500 text-white hover:bg-red-400 focus-visible:ring-red-500',
-        success: 'bg-emerald-500 text-white hover:bg-emerald-400 focus-visible:ring-emerald-500',
+        secondary: 'bg-gray-100 text-slate-100 hover:bg-slate-600 focus-visible:ring-slate-500',
+        outline: 'border-2 border-gray-300 bg-transparent text-slate-100 hover:bg-white hover:border-slate-500',
+        ghost: 'bg-transparent text-gray-700 hover:bg-white hover:text-slate-100',
+        danger: 'bg-red-500 text-gray-900 hover:bg-red-400 focus-visible:ring-red-500',
+        success: 'bg-emerald-500 text-gray-900 hover:bg-emerald-400 focus-visible:ring-emerald-500',
       },
       size: {
         sm: 'h-8 px-3 text-xs',

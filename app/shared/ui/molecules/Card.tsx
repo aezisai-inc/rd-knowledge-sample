@@ -18,11 +18,11 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-xl bg-slate-900 p-6',
+          'rounded-xl bg-gray-50 p-6',
           {
             'border border-slate-800': variant === 'default',
-            'shadow-lg shadow-black/20 border border-slate-700': variant === 'elevated',
-            'border-2 border-slate-700': variant === 'bordered',
+            'shadow-lg shadow-black/20 border border-gray-200': variant === 'elevated',
+            'border-2 border-gray-200': variant === 'bordered',
           },
           className
         )}
@@ -68,7 +68,7 @@ export const CardDescription = forwardRef<HTMLParagraphElement, CardDescriptionP
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-sm text-slate-400', className)}
+      className={cn('text-sm text-gray-500', className)}
       {...props}
     />
   )

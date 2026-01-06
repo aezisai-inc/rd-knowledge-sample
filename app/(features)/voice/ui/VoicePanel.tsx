@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
-
-const client = generateClient<Schema>();
 
 interface Message {
   id: string;
@@ -18,6 +16,9 @@ interface Message {
 type VoiceMode = 'text-to-speech' | 'speech-to-text' | 'dialogue';
 
 export function VoicePanel() {
+  // Amplify clientを遅延初期化（Amplify.configure後に呼び出されることを保証）
+  const client = useMemo(() => generateClient<Schema>(), []);
+  
   const [sessionId] = useState(() => `voice-${Date.now()}`);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -277,11 +278,11 @@ export function VoicePanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <span>🎙️</span> Voice Dialogue
         </h2>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-600">
           Nova Sonic - 音声対話AI
         </p>
         
@@ -293,8 +294,8 @@ export function VoicePanel() {
               onClick={() => setVoiceMode(mode.id)}
               className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 voiceMode === mode.id
-                  ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white'
-                  : 'bg-gray-700 text-gray-400 hover:text-white'
+                  ? 'bg-gradient-to-r from-green-500 to-teal-500 text-gray-900'
+                  : 'bg-gray-100 text-gray-600 hover:text-gray-900'
               }`}
             >
               <span className="mr-1">{mode.icon}</span>
@@ -327,10 +328,10 @@ export function VoicePanel() {
               <div
                 className={`max-w-[80%] rounded-xl p-4 ${
                   message.role === 'user'
-                    ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white'
+                    ? 'bg-gradient-to-r from-green-500 to-teal-500 text-gray-900'
                     : message.role === 'system'
-                    ? 'bg-gray-700/50 text-gray-400 text-sm italic'
-                    : 'bg-gray-700 text-gray-100'
+                    ? 'bg-gray-100 text-gray-600 text-sm italic'
+                    : 'bg-gray-100 text-gray-800'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
@@ -342,14 +343,14 @@ export function VoicePanel() {
                     className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       message.isPlaying
                         ? 'bg-green-500/30 text-green-300'
-                        : 'bg-gray-600 text-white hover:bg-gray-500'
+                        : 'bg-gray-600 text-gray-900 hover:bg-gray-500'
                     }`}
                   >
                     {message.isPlaying ? '🔊 再生中...' : '▶️ 音声を再生'}
                   </button>
                 )}
                 
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-600 mt-2">
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </p>
               </div>
@@ -357,7 +358,7 @@ export function VoicePanel() {
           ))
         )}
         {isLoading && (
-          <div className="flex items-center gap-2 text-gray-400 justify-center py-4">
+          <div className="flex items-center gap-2 text-gray-600 justify-center py-4">
             <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
             <span className="text-sm">処理中...</span>
           </div>
@@ -365,14 +366,14 @@ export function VoicePanel() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-700 p-4 space-y-3">
+      <div className="border-t border-gray-200 p-4 space-y-3">
         {/* Recording Controls */}
         <div className="flex items-center justify-center gap-4">
           {!isRecording && !audioBlob ? (
             <button
               onClick={startRecording}
               disabled={isLoading}
-              className="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white text-2xl flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="w-16 h-16 rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-gray-900 text-2xl flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
               title="録音開始"
             >
               🎤
@@ -381,11 +382,11 @@ export function VoicePanel() {
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <p className="text-red-400 text-sm animate-pulse">● 録音中</p>
-                <p className="text-white font-mono">{formatTime(recordingTime)}</p>
+                <p className="text-gray-900 font-mono">{formatTime(recordingTime)}</p>
               </div>
               <button
                 onClick={stopRecording}
-                className="w-16 h-16 rounded-full bg-red-500 text-white text-2xl flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
+                className="w-16 h-16 rounded-full bg-red-500 text-gray-900 text-2xl flex items-center justify-center hover:scale-105 transition-transform shadow-lg"
                 title="録音停止"
               >
                 ⬛
@@ -396,7 +397,7 @@ export function VoicePanel() {
               <audio src={audioUrl || undefined} controls className="h-10" />
               <button
                 onClick={clearRecording}
-                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
                 title="録音を削除"
               >
                 🗑️
@@ -404,7 +405,7 @@ export function VoicePanel() {
               <button
                 onClick={handleSendAudio}
                 disabled={isLoading}
-                className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 📤 送信
               </button>
@@ -414,10 +415,10 @@ export function VoicePanel() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-700"></div>
+            <div className="w-full border-t border-gray-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-800 text-gray-500">または</span>
+            <span className="px-2 bg-white text-gray-500">または</span>
           </div>
         </div>
 
@@ -433,7 +434,7 @@ export function VoicePanel() {
                 : 'テキストを入力...'
             }
             disabled={isLoading || voiceMode === 'speech-to-text'}
-            className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-green-500 disabled:opacity-50"
+            className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-green-500 disabled:opacity-50"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -444,7 +445,7 @@ export function VoicePanel() {
           <button
             onClick={handleSendText}
             disabled={isLoading || !textInput.trim() || voiceMode === 'speech-to-text'}
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-gray-900 font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
             {isLoading ? '⏳' : '送信'}
           </button>
