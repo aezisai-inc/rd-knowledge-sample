@@ -6,7 +6,7 @@
  */
 
 import { generateClient } from 'aws-amplify/api';
-import type { Schema } from '../../amplify/data/resource';
+import type { Schema } from '../../../amplify/data/resource';
 
 // Singleton client instance
 let client: ReturnType<typeof generateClient<Schema>> | null = null;
