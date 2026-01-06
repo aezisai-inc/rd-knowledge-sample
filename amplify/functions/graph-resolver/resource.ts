@@ -11,7 +11,4 @@ export const graphResolver = defineFunction({
     EDGES_TABLE: process.env.EDGES_TABLE || 'rd-knowledge-edges',
     LOG_LEVEL: process.env.LOG_LEVEL || 'INFO',
   },
-  bundling: {
-    externalModules: ['@aws-sdk/*'], // AWS SDK is included in Lambda runtime
-  },
 });
