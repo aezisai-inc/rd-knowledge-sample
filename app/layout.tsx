@@ -54,12 +54,9 @@ const lightTheme: Theme = {
           },
         },
       },
-      fieldcontrol: {
-        backgroundColor: { value: '#ffffff' },
-        borderColor: { value: '#cbd5e1' },
-        color: { value: '#1e293b' },
-        _focus: {
-          borderColor: { value: '#3b82f6' },
+      field: {
+        label: {
+          color: { value: '#1e293b' },
         },
       },
       tabs: {
