@@ -54,7 +54,7 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <title>rd-knowledge-sample | AWS Nova Series 技術検証</title>
+        <title>Knowledge Sample | RAG・Memory 技術検証</title>
         <meta name="description" content="Test and compare AWS memory services: AgentCore Memory, Bedrock KB, S3 Vectors" />
       </head>
       <body className="bg-slate-950 text-slate-100 min-h-screen">
@@ -64,8 +64,8 @@ export default function RootLayout({
             Header() {
               return (
                 <div className="text-center py-6">
-                  <h1 className="text-2xl font-bold text-white">🔐 ログイン</h1>
-                  <p className="text-slate-400 text-sm mt-2">AWS Nova Series 技術検証</p>
+                  <h1 className="text-2xl font-bold text-white">🧠 Knowledge Sample</h1>
+                  <p className="text-slate-400 text-sm mt-2">RAG・Memory 技術検証</p>
                 </div>
               );
             },
