@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../../../amplify/data/resource';
-
-const client = generateClient<Schema>();
 
 // =============================================================================
 // Types
@@ -60,6 +58,9 @@ interface SessionInfo {
 // =============================================================================
 
 export function MemoryChat() {
+  // Amplify clientを遅延初期化（Amplify.configure後に呼び出されることを保証）
+  const client = useMemo(() => generateClient<Schema>(), []);
+  
   // State
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -439,10 +440,10 @@ export function MemoryChat() {
     <div className="h-[700px] flex">
       {/* Session Sidebar */}
       {showSessions && (
-        <div className="w-64 flex flex-col bg-slate-900/80 border-r border-slate-700">
-          <div className="p-3 border-b border-slate-700">
-            <h3 className="text-sm font-semibold text-slate-200">📂 過去のセッション</h3>
-            <p className="text-xs text-slate-500 mt-1">記憶を呼び起こす</p>
+        <div className="w-64 flex flex-col bg-white border-r border-gray-200">
+          <div className="p-3 border-b border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-800">📂 過去のセッション</h3>
+            <p className="text-xs text-gray-500 mt-1">記憶を呼び起こす</p>
           </div>
           
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -458,9 +459,9 @@ export function MemoryChat() {
             </button>
 
             {loadingSessions ? (
-              <div className="text-center py-4 text-slate-500 text-sm">読み込み中...</div>
+              <div className="text-center py-4 text-gray-500 text-sm">読み込み中...</div>
             ) : pastSessions.length === 0 ? (
-              <div className="text-center py-4 text-slate-500 text-sm">
+              <div className="text-center py-4 text-gray-500 text-sm">
                 過去のセッションはありません
               </div>
             ) : (
@@ -471,13 +472,13 @@ export function MemoryChat() {
                   className={`w-full p-3 rounded-lg text-left transition-colors ${
                     sessionId === session.sessionId
                       ? 'bg-blue-500/20 border border-blue-500/30'
-                      : 'hover:bg-slate-700/50 border border-transparent'
+                      : 'hover:bg-gray-100 border border-transparent'
                   }`}
                 >
-                  <div className="text-sm font-medium text-slate-200 truncate">
+                  <div className="text-sm font-medium text-gray-800 truncate">
                     {session.title}
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                     <span>💬 {session.messageCount}</span>
                     <span>•</span>
                     <span>{new Date(session.lastActive).toLocaleDateString('ja-JP')}</span>
@@ -488,7 +489,7 @@ export function MemoryChat() {
           </div>
           
           {/* Memory Type Legend */}
-          <div className="p-3 border-t border-slate-700 text-xs space-y-1">
+          <div className="p-3 border-t border-gray-200 text-xs space-y-1">
             <div className="flex items-center gap-2 text-pink-300">
               <span className="w-2 h-2 rounded-full bg-pink-500"></span>
               短期記憶（現セッション）
@@ -506,26 +507,26 @@ export function MemoryChat() {
       )}
 
       {/* Chat Panel */}
-      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} ${showSessions ? '' : ''} border-r border-slate-700 flex-1`}>
+      <div className={`flex flex-col ${showLogs ? 'w-2/3' : 'w-full'} ${showSessions ? '' : ''} border-r border-gray-200 flex-1`}>
         {/* Header */}
-        <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+        <div className="p-4 border-b border-gray-200 bg-white/50">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSessions(!showSessions)}
                 className={`p-2 rounded-lg transition-colors ${
-                  showSessions ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  showSessions ? 'bg-blue-500 text-gray-900' : 'bg-gray-100 text-gray-700 hover:bg-slate-600'
                 }`}
                 title="過去のセッション"
               >
                 📂
               </button>
-              <h2 className="text-lg font-semibold text-white">💬 RAG Memory Chat</h2>
+              <h2 className="text-lg font-semibold text-gray-900">💬 RAG Memory Chat</h2>
             </div>
             <button
               onClick={() => setShowLogs(!showLogs)}
               className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                showLogs ? 'bg-violet-500 text-white' : 'bg-slate-700 text-slate-300'
+                showLogs ? 'bg-violet-500 text-gray-900' : 'bg-gray-100 text-gray-700'
               }`}
             >
               📊 {showLogs ? 'Hide Logs' : 'Show Logs'}
@@ -535,7 +536,7 @@ export function MemoryChat() {
           {/* Memory Source Selection */}
           <div className="flex flex-wrap gap-2">
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.agentcore ? 'bg-pink-500/20 border-pink-500/50' : 'bg-slate-700/50 border-slate-600'
+              memorySources.agentcore ? 'bg-pink-500/20 border-pink-500/50' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -547,7 +548,7 @@ export function MemoryChat() {
             </label>
             
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.bedrockKb ? 'bg-blue-500/20 border-blue-500/50' : 'bg-slate-700/50 border-slate-600'
+              memorySources.bedrockKb ? 'bg-blue-500/20 border-blue-500/50' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -559,7 +560,7 @@ export function MemoryChat() {
             </label>
             
             <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${
-              memorySources.s3Vectors ? 'bg-green-500/20 border-green-500/50' : 'bg-slate-700/50 border-slate-600'
+              memorySources.s3Vectors ? 'bg-green-500/20 border-green-500/50' : 'bg-gray-100 border-gray-300'
             } border`}>
               <input
                 type="checkbox"
@@ -573,7 +574,7 @@ export function MemoryChat() {
           
           {/* Session Info */}
           {sessionId && (
-            <div className="mt-2 text-xs text-slate-400 flex items-center gap-3">
+            <div className="mt-2 text-xs text-gray-500 flex items-center gap-3">
               <span>👤 {userId?.slice(0, 20)}...</span>
               <span>📝 {sessionId.slice(0, 15)}...</span>
               <span>💬 {messages.filter(m => m.role !== 'system').length} messages</span>
@@ -594,18 +595,18 @@ export function MemoryChat() {
               <div
                 className={`max-w-[85%] rounded-xl px-4 py-3 ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-white'
+                    ? 'bg-gradient-to-r from-violet-500 to-purple-600 text-gray-900'
                     : msg.role === 'system'
-                    ? 'bg-slate-700/50 text-slate-400 text-sm italic'
-                    : 'bg-slate-700 text-slate-100'
+                    ? 'bg-gray-100 text-gray-500 text-sm italic'
+                    : 'bg-gray-100 text-slate-100'
                 }`}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>
                 
                 {/* Source References */}
                 {msg.metadata?.sources && msg.metadata.sources.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-600 space-y-1">
-                    <p className="text-xs text-slate-400 font-medium">📎 参照元:</p>
+                  <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+                    <p className="text-xs text-gray-500 font-medium">📎 参照元:</p>
                     {msg.metadata.sources.map((src, idx) => (
                       <div key={idx} className="flex items-center gap-2 text-xs">
                         <span className={`px-1.5 py-0.5 rounded ${
@@ -616,7 +617,7 @@ export function MemoryChat() {
                           {src.type === 'agentcore' ? '🧠' : src.type === 'bedrock_kb' ? '📚' : '🗄️'}
                           {src.id === 'short-term-memory' ? '短期' : src.id === 'long-term-memory' ? '長期' : src.type}
                         </span>
-                        {src.score && <span className="text-slate-500">Score: {(src.score * 100).toFixed(0)}%</span>}
+                        {src.score && <span className="text-gray-500">Score: {(src.score * 100).toFixed(0)}%</span>}
                       </div>
                     ))}
                   </div>
@@ -624,7 +625,7 @@ export function MemoryChat() {
                 
                 {/* Processing Info */}
                 {msg.metadata?.processingTime && (
-                  <div className="mt-2 text-xs text-slate-400">
+                  <div className="mt-2 text-xs text-gray-500">
                     ⏱️ {msg.metadata.processingTime}ms | 
                     🤖 {msg.metadata.model} |
                     💾 {msg.metadata.memoryType === 'short_term' ? '短期' : 
@@ -639,7 +640,7 @@ export function MemoryChat() {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-slate-700 bg-slate-800/30">
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white/30">
           <div className="flex gap-2">
             <input
               type="text"
@@ -647,12 +648,12 @@ export function MemoryChat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="メッセージを入力... (RAG + Memory で回答します)"
               disabled={isLoading || !sessionId}
-              className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-900 placeholder-slate-400 focus:outline-none focus:border-violet-500 disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim() || !sessionId}
-              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-gray-900 font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
               {isLoading ? '⏳' : '送信'}
             </button>
@@ -662,10 +663,10 @@ export function MemoryChat() {
 
       {/* Processing Logs Panel */}
       {showLogs && (
-        <div className="w-1/3 flex flex-col bg-slate-900/50">
-          <div className="p-3 border-b border-slate-700 bg-slate-800/50">
-            <h3 className="text-sm font-semibold text-slate-300">📊 Processing Logs</h3>
-            <p className="text-xs text-slate-500 mt-1">Real-time processing status</p>
+        <div className="w-1/3 flex flex-col bg-gray-50/50">
+          <div className="p-3 border-b border-gray-200 bg-white/50">
+            <h3 className="text-sm font-semibold text-gray-700">📊 Processing Logs</h3>
+            <p className="text-xs text-gray-500 mt-1">Real-time processing status</p>
           </div>
           
           <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs font-mono">
@@ -692,18 +693,18 @@ export function MemoryChat() {
                   }`}>
                     {log.source}
                   </span>
-                  <span className="text-slate-300 font-medium">{log.action}</span>
+                  <span className="text-gray-700 font-medium">{log.action}</span>
                 </div>
-                <p className="text-slate-400 mt-1 ml-4">{log.details}</p>
+                <p className="text-gray-500 mt-1 ml-4">{log.details}</p>
                 {log.duration && (
-                  <p className="text-slate-500 mt-0.5 ml-4">⏱️ {log.duration}ms</p>
+                  <p className="text-gray-500 mt-0.5 ml-4">⏱️ {log.duration}ms</p>
                 )}
               </div>
             ))}
             <div ref={logsEndRef} />
             
             {processingLogs.length === 0 && (
-              <div className="text-center text-slate-500 py-8">
+              <div className="text-center text-gray-500 py-8">
                 <p>🔍 Waiting for activity...</p>
                 <p className="mt-1">Send a message to see processing logs</p>
               </div>

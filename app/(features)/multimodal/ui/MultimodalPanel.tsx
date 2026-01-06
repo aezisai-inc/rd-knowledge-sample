@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
-
-const client = generateClient<Schema>();
 
 type TabId = 'analyze' | 'generate-image' | 'generate-video';
 
@@ -19,6 +17,9 @@ interface Message {
 }
 
 export function MultimodalPanel() {
+  // Amplify clientを遅延初期化（Amplify.configure後に呼び出されることを保証）
+  const client = useMemo(() => generateClient<Schema>(), []);
+  
   const [activeTab, setActiveTab] = useState<TabId>('analyze');
   const [sessionId] = useState(() => `multimodal-${Date.now()}`);
   const [prompt, setPrompt] = useState('');
@@ -195,7 +196,7 @@ export function MultimodalPanel() {
   return (
     <div className="h-full flex flex-col">
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-700">
+      <div className="flex border-b border-gray-200">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -203,7 +204,7 @@ export function MultimodalPanel() {
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/10'
-                : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
             <span className="text-lg mr-2">{tab.icon}</span>
@@ -246,8 +247,8 @@ export function MultimodalPanel() {
               <div
                 className={`max-w-[80%] rounded-xl p-4 ${
                   message.role === 'user'
-                    ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-white'
-                    : 'bg-gray-700 text-gray-100'
+                    ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-gray-900'
+                    : 'bg-gray-100 text-gray-800'
                 }`}
               >
                 {/* User's uploaded image */}
@@ -274,14 +275,14 @@ export function MultimodalPanel() {
                           className="max-w-full rounded-lg"
                         />
                         {img.seed && (
-                          <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                          <span className="absolute bottom-2 right-2 bg-black/50 text-gray-900 text-xs px-2 py-1 rounded">
                             Seed: {img.seed}
                           </span>
                         )}
                         <a
                           href={`data:image/png;base64,${img.base64}`}
                           download={`generated-${Date.now()}.png`}
-                          className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
+                          className="absolute top-2 right-2 bg-black/50 text-gray-900 text-xs px-2 py-1 rounded hover:bg-black/70"
                         >
                           💾 保存
                         </a>
@@ -292,7 +293,7 @@ export function MultimodalPanel() {
 
                 {/* Video generation status */}
                 {message.outputVideo && (
-                  <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                  <div className="mt-4 p-3 bg-white rounded-lg">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
                         message.outputVideo.status === 'COMPLETED' ? 'bg-green-500' :
@@ -317,7 +318,7 @@ export function MultimodalPanel() {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-400 mt-2">
+                <p className="text-xs text-gray-600 mt-2">
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </p>
               </div>
@@ -325,7 +326,7 @@ export function MultimodalPanel() {
           ))
         )}
         {isLoading && (
-          <div className="flex items-center gap-2 text-gray-400 justify-center py-4">
+          <div className="flex items-center gap-2 text-gray-600 justify-center py-4">
             <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             <span className="text-sm">
               {activeTab === 'analyze' ? '画像を解析中...' :
@@ -337,7 +338,7 @@ export function MultimodalPanel() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-700 p-4">
+      <div className="border-t border-gray-200 p-4">
         {/* Image Upload (for analyze tab) */}
         {activeTab === 'analyze' && (
           <div className="mb-3">
@@ -351,19 +352,19 @@ export function MultimodalPanel() {
             />
             
             {uploadedImage ? (
-              <div className="flex items-center gap-3 p-3 bg-gray-700 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
                 <img
                   src={`data:image/png;base64,${uploadedImage}`}
                   alt="Preview"
                   className="w-16 h-16 object-cover rounded"
                 />
                 <div className="flex-1">
-                  <p className="text-sm text-white truncate">{uploadedFileName}</p>
-                  <p className="text-xs text-gray-400">画像がアップロードされました</p>
+                  <p className="text-sm text-gray-900 truncate">{uploadedFileName}</p>
+                  <p className="text-xs text-gray-600">画像がアップロードされました</p>
                 </div>
                 <button
                   onClick={clearUploadedImage}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-600 rounded"
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-600 rounded"
                 >
                   ✕
                 </button>
@@ -371,10 +372,10 @@ export function MultimodalPanel() {
             ) : (
               <label
                 htmlFor="image-upload"
-                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-colors"
+                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-colors"
               >
                 <span className="text-2xl">📷</span>
-                <span className="text-gray-400">画像をアップロード（クリックまたはドラッグ&ドロップ）</span>
+                <span className="text-gray-600">画像をアップロード（クリックまたはドラッグ&ドロップ）</span>
               </label>
             )}
           </div>
@@ -393,7 +394,7 @@ export function MultimodalPanel() {
                 : '生成したい動画を説明してください（例：「宇宙船が星間を飛行する様子」）'
             }
             disabled={isLoading}
-            className="flex-1 min-h-[60px] max-h-[120px] px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500"
+            className="flex-1 min-h-[60px] max-h-[120px] px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -404,7 +405,7 @@ export function MultimodalPanel() {
           <button
             onClick={handleSubmit}
             disabled={isLoading || (!prompt.trim() && !uploadedImage)}
-            className="self-end px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-500 text-white font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            className="self-end px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-500 text-gray-900 font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

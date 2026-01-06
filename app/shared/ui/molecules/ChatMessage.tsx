@@ -13,7 +13,7 @@ interface ChatMessageProps {
 const roleStyles = {
   user: 'bg-blue-600/20 border-blue-600/30 ml-auto',
   assistant: 'bg-green-600/20 border-green-600/30 mr-auto',
-  system: 'bg-gray-600/20 border-gray-600/30 mx-auto text-center',
+  system: 'bg-gray-600/20 border-gray-300/30 mx-auto text-center',
 };
 
 const roleLabels = {
@@ -32,14 +32,14 @@ export function ChatMessage({ role, content, timestamp, className }: ChatMessage
       )}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-gray-400">{roleLabels[role]}</span>
+        <span className="text-xs font-medium text-gray-600">{roleLabels[role]}</span>
         {timestamp && (
           <span className="text-xs text-gray-500">
             {new Date(timestamp).toLocaleTimeString()}
           </span>
         )}
       </div>
-      <p className="text-sm text-white whitespace-pre-wrap">{content}</p>
+      <p className="text-sm text-gray-900 whitespace-pre-wrap">{content}</p>
     </div>
   );
 }
