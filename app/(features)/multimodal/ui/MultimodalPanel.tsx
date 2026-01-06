@@ -194,16 +194,16 @@ export function MultimodalPanel() {
   // =============================================================================
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-[700px] flex flex-col bg-gray-50">
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 bg-white">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? 'text-blue-400 border-b-2 border-blue-400 bg-blue-500/10'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
@@ -221,19 +221,19 @@ export function MultimodalPanel() {
             {activeTab === 'analyze' ? (
               <>
                 <p className="text-4xl mb-4">👁️</p>
-                <p className="text-lg font-medium">画像解析</p>
+                <p className="text-lg font-medium text-gray-700">画像解析</p>
                 <p className="text-sm mt-2">画像をアップロードして、AIに解析してもらいましょう</p>
               </>
             ) : activeTab === 'generate-image' ? (
               <>
                 <p className="text-4xl mb-4">🎨</p>
-                <p className="text-lg font-medium">画像生成</p>
+                <p className="text-lg font-medium text-gray-700">画像生成</p>
                 <p className="text-sm mt-2">テキストから画像を生成します</p>
               </>
             ) : (
               <>
                 <p className="text-4xl mb-4">🎬</p>
-                <p className="text-lg font-medium">動画生成</p>
+                <p className="text-lg font-medium text-gray-700">動画生成</p>
                 <p className="text-sm mt-2">テキストから動画を生成します（非同期処理）</p>
               </>
             )}
@@ -247,8 +247,8 @@ export function MultimodalPanel() {
               <div
                 className={`max-w-[80%] rounded-xl p-4 ${
                   message.role === 'user'
-                    ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-gray-900'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white border border-gray-200 text-gray-800 shadow-sm'
                 }`}
               >
                 {/* User's uploaded image */}
@@ -275,14 +275,14 @@ export function MultimodalPanel() {
                           className="max-w-full rounded-lg"
                         />
                         {img.seed && (
-                          <span className="absolute bottom-2 right-2 bg-black/50 text-gray-900 text-xs px-2 py-1 rounded">
+                          <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
                             Seed: {img.seed}
                           </span>
                         )}
                         <a
                           href={`data:image/png;base64,${img.base64}`}
                           download={`generated-${Date.now()}.png`}
-                          className="absolute top-2 right-2 bg-black/50 text-gray-900 text-xs px-2 py-1 rounded hover:bg-black/70"
+                          className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
                         >
                           💾 保存
                         </a>
@@ -293,14 +293,14 @@ export function MultimodalPanel() {
 
                 {/* Video generation status */}
                 {message.outputVideo && (
-                  <div className="mt-4 p-3 bg-white rounded-lg">
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${
                         message.outputVideo.status === 'COMPLETED' ? 'bg-green-500' :
                         message.outputVideo.status === 'FAILED' ? 'bg-red-500' :
                         'bg-yellow-500 animate-pulse'
                       }`} />
-                      <span className="text-sm">Status: {message.outputVideo.status}</span>
+                      <span className="text-sm text-gray-700">Status: {message.outputVideo.status}</span>
                     </div>
                     {message.outputVideo.jobId && (
                       <p className="text-xs text-gray-500 mt-1">Job ID: {message.outputVideo.jobId}</p>
@@ -310,7 +310,7 @@ export function MultimodalPanel() {
                         href={message.outputVideo.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-400 text-sm mt-2 inline-block hover:underline"
+                        className="text-blue-600 text-sm mt-2 inline-block hover:underline"
                       >
                         🎬 動画を見る
                       </a>
@@ -318,7 +318,7 @@ export function MultimodalPanel() {
                   </div>
                 )}
 
-                <p className="text-xs text-gray-600 mt-2">
+                <p className="text-xs mt-2 opacity-70">
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </p>
               </div>
@@ -338,7 +338,7 @@ export function MultimodalPanel() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-gray-200 p-4 bg-white">
         {/* Image Upload (for analyze tab) */}
         {activeTab === 'analyze' && (
           <div className="mb-3">
@@ -352,19 +352,19 @@ export function MultimodalPanel() {
             />
             
             {uploadedImage ? (
-              <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg border border-gray-200">
                 <img
                   src={`data:image/png;base64,${uploadedImage}`}
                   alt="Preview"
                   className="w-16 h-16 object-cover rounded"
                 />
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900 truncate">{uploadedFileName}</p>
-                  <p className="text-xs text-gray-600">画像がアップロードされました</p>
+                  <p className="text-sm text-gray-800 truncate">{uploadedFileName}</p>
+                  <p className="text-xs text-gray-500">画像がアップロードされました</p>
                 </div>
                 <button
                   onClick={clearUploadedImage}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-600 rounded"
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded"
                 >
                   ✕
                 </button>
@@ -372,7 +372,7 @@ export function MultimodalPanel() {
             ) : (
               <label
                 htmlFor="image-upload"
-                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-colors"
+                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
               >
                 <span className="text-2xl">📷</span>
                 <span className="text-gray-600">画像をアップロード（クリックまたはドラッグ&ドロップ）</span>
@@ -394,7 +394,7 @@ export function MultimodalPanel() {
                 : '生成したい動画を説明してください（例：「宇宙船が星間を飛行する様子」）'
             }
             disabled={isLoading}
-            className="flex-1 min-h-[60px] max-h-[120px] px-4 py-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500"
+            className="flex-1 min-h-[60px] max-h-[120px] px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -405,7 +405,7 @@ export function MultimodalPanel() {
           <button
             onClick={handleSubmit}
             disabled={isLoading || (!prompt.trim() && !uploadedImage)}
-            className="self-end px-6 py-3 bg-gradient-to-r from-blue-500 to-violet-500 text-gray-900 font-medium rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            className="self-end px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
