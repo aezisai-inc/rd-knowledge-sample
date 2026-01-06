@@ -8,6 +8,6 @@ id,task,status,updated_at,notes
 7,RAG参照元ドキュメント表示,completed,2026-01-04,回答に使用した参照元を表示
 8,DynamoDBテーブル作成,completed,2026-01-04,MemoryEvents/MemorySessions テーブル定義 in backend.ts
 9,S3バケット設定,completed,2026-01-04,vectorsバケット設定 in backend.ts
-10,Amplify sandbox検証,pending,,ローカルでの動作確認
+10,Amplify sandbox検証,completed,2026-01-06,本番デプロイ成功(Build#25) - Lambda/DynamoDB/S3/フロントエンド稼働確認
 11,Lambda環境変数設定,completed,2026-01-04,MEMORY_TABLE/SESSION_TABLE/OUTPUT_BUCKET
 12,本番設定対応,completed,2026-01-04,RemovalPolicy.RETAIN/CORS制限/バージョニング有効
