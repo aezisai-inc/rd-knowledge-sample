@@ -1,12 +1,12 @@
 "use client";
 
-// Amplify設定を最初にインポート（モジュールレベルで設定が実行される）
-import "./lib/amplify-config";
-
+import { useState, useEffect } from "react";
+import { Amplify } from "aws-amplify";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Authenticator } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
+import outputs from "./amplify_outputs.json";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -23,6 +23,34 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const [isConfigured, setIsConfigured] = useState(false);
+
+  useEffect(() => {
+    // Amplify設定を確実に1回だけ実行
+    try {
+      Amplify.configure(outputs);
+      console.log("Amplify configured successfully");
+      setIsConfigured(true);
+    } catch (error) {
+      console.error("Amplify configuration failed:", error);
+      setIsConfigured(true); // エラーでも続行
+    }
+  }, []);
+
+  // 設定完了まではローディング表示
+  if (!isConfigured) {
+    return (
+      <html lang="ja" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+        <body className="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-400">初期化中...</p>
+          </div>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="ja" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
       <head>
