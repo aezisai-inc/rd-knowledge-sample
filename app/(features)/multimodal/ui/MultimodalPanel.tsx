@@ -18,7 +18,8 @@ interface Message {
 
 export function MultimodalPanel() {
   // Amplify clientを遅延初期化（Amplify.configure後に呼び出されることを保証）
-  const client = useMemo(() => generateClient<Schema>(), []);
+  // 認証モードをapiKeyに明示的に設定（publicApiKey認可を使用するため）
+  const client = useMemo(() => generateClient<Schema>({ authMode: 'apiKey' }), []);
   
   const [activeTab, setActiveTab] = useState<TabId>('analyze');
   const [sessionId] = useState(() => `multimodal-${Date.now()}`);
