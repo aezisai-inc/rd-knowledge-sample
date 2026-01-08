@@ -159,35 +159,13 @@ const s3Policy = new iam.PolicyStatement({
   ],
 });
 
-// Polly permissions for Text-to-Speech
-const pollyPolicy = new iam.PolicyStatement({
-  effect: iam.Effect.ALLOW,
-  actions: [
-    'polly:SynthesizeSpeech',
-  ],
-  resources: ['*'],
-});
-
-// Transcribe permissions for Speech-to-Text
-const transcribePolicy = new iam.PolicyStatement({
-  effect: iam.Effect.ALLOW,
-  actions: [
-    'transcribe:StartTranscriptionJob',
-    'transcribe:GetTranscriptionJob',
-    'transcribe:DeleteTranscriptionJob',
-  ],
-  resources: ['*'],
-});
-
 // ========================================
 // Add permissions to resolvers
 // ========================================
 
-// Agent Resolver: Bedrock + S3 + Polly + Transcribe
+// Agent Resolver: Bedrock + S3
 backend.agentResolver.resources.lambda.addToRolePolicy(bedrockPolicy);
 backend.agentResolver.resources.lambda.addToRolePolicy(s3Policy);
-backend.agentResolver.resources.lambda.addToRolePolicy(pollyPolicy);
-backend.agentResolver.resources.lambda.addToRolePolicy(transcribePolicy);
 
 // Vector Resolver: Bedrock (embeddings) + S3
 backend.vectorResolver.resources.lambda.addToRolePolicy(bedrockPolicy);

@@ -6,6 +6,8 @@ applications:
           commands:
             - nvm use 20
             - npm ci
+            # Install Lambda function dependencies
+            - cd amplify/functions/agent-resolver && npm install && cd ../../..
         build:
           commands:
             # Deploy Amplify Gen2 backend (Lambda, AppSync, DynamoDB, etc.)
