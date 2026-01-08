@@ -103,6 +103,15 @@ export function MultimodalPanel() {
     try {
       let assistantMessage: Message;
 
+      // Helper to extract message from various response structures
+      const extractMessage = (res: any) => 
+        res?.data?.message || 
+        res?.data?.invokeMultimodal?.message || 
+        res?.invokeMultimodal?.message;
+      
+      const extractData = (res: any) =>
+        res?.data || res?.data?.invokeMultimodal || res?.invokeMultimodal;
+
       if (activeTab === 'analyze') {
         // =============================================================================
         // Image Analysis (Nova Vision)
@@ -113,10 +122,12 @@ export function MultimodalPanel() {
           image: uploadedImage || undefined,
         });
 
+        console.log('[MultimodalPanel] Response:', JSON.stringify(response, null, 2));
+
         assistantMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: response.data?.message || 'No response received',
+          content: extractMessage(response) || 'No response received',
           timestamp: new Date().toISOString(),
         };
 
@@ -129,14 +140,16 @@ export function MultimodalPanel() {
           prompt: `[IMAGE_GENERATION] ${currentPrompt}`,
         });
 
-        const images = response.data?.images?.filter(
+        console.log('[MultimodalPanel] Image Response:', JSON.stringify(response, null, 2));
+        const data = extractData(response);
+        const images = data?.images?.filter(
           (img: any): img is { base64: string; seed?: number } => !!img?.base64
         ) || [];
 
         assistantMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: response.data?.message || (images.length > 0 ? `${images.length}枚の画像を生成しました` : '画像生成に失敗しました'),
+          content: extractMessage(response) || (images.length > 0 ? `${images.length}枚の画像を生成しました` : '画像生成に失敗しました'),
           timestamp: new Date().toISOString(),
           outputImages: images.length > 0 ? images : undefined,
         };
@@ -150,15 +163,17 @@ export function MultimodalPanel() {
           prompt: `[VIDEO_GENERATION] ${currentPrompt}`,
         });
 
+        console.log('[MultimodalPanel] Video Response:', JSON.stringify(response, null, 2));
+        const data = extractData(response);
         assistantMessage = {
           id: `assistant-${Date.now()}`,
           role: 'assistant',
-          content: response.data?.message || '動画生成ジョブを開始しました',
+          content: extractMessage(response) || '動画生成ジョブを開始しました',
           timestamp: new Date().toISOString(),
-          outputVideo: response.data?.video ? {
-            status: response.data.video.status || 'PENDING',
-            jobId: response.data.video.jobId ?? undefined,
-            url: response.data.video.url ?? undefined,
+          outputVideo: data?.video ? {
+            status: data.video.status || 'PENDING',
+            jobId: data.video.jobId ?? undefined,
+            url: data.video.url ?? undefined,
           } : { status: 'PENDING' },
         };
       }

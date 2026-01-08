@@ -17,7 +17,7 @@ import logging
 import os
 from typing import Any
 
-from strands.tool import tool
+from strands import tool
 
 logger = logging.getLogger(__name__)
 

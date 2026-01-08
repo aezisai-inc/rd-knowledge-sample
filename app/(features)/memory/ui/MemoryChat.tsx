@@ -377,7 +377,18 @@ export function MemoryChat() {
       });
 
       const processingTime = Date.now() - startTime;
-      const responseText = response.data?.message || 'No response received';
+      
+      // Debug: Log response structure to identify the issue
+      console.log('[MemoryChat] Full response:', JSON.stringify(response, null, 2));
+      console.log('[MemoryChat] response.data:', response.data);
+      console.log('[MemoryChat] response.errors:', response.errors);
+      
+      // Try multiple possible response paths
+      const responseText = 
+        response.data?.message ||  // Direct path (expected by Amplify)
+        (response.data as any)?.invokeMultimodal?.message ||  // GraphQL nested path
+        (response as any)?.invokeMultimodal?.message ||  // Alternative path
+        'No response received';
       
       addLog('llm', 'Response Generated', `${processingTime}ms total`, 'success', processingTime);
 
