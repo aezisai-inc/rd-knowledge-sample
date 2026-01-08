@@ -17,20 +17,6 @@ import {
   InvokeModelCommand,
   ConverseCommand,
 } from '@aws-sdk/client-bedrock-runtime';
-import {
-  PollyClient,
-  SynthesizeSpeechCommand,
-  OutputFormat,
-  VoiceId,
-  Engine,
-} from '@aws-sdk/client-polly';
-import {
-  TranscribeClient,
-  StartTranscriptionJobCommand,
-  GetTranscriptionJobCommand,
-  TranscriptionJobStatus,
-} from '@aws-sdk/client-transcribe';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 // Types aligned with Domain Layer
 interface MultimodalResponse {
@@ -84,12 +70,6 @@ const NOVA_SONIC_MODEL_ID = 'amazon.nova-sonic-v1:0'; // 音声用 (inference pr
 
 // Bedrock Client
 const bedrockClient = new BedrockRuntimeClient({ region: REGION });
-const pollyClient = new PollyClient({ region: REGION });
-const transcribeClient = new TranscribeClient({ region: REGION });
-const s3Client = new S3Client({ region: REGION });
-
-// S3 bucket for audio files (from environment variable)
-const AUDIO_BUCKET = process.env.OUTPUT_BUCKET || 'rd-knowledge-sample-audio';
 
 // Observability: Structured logging
 const log = (level: string, message: string, data?: Record<string, unknown>) => {
@@ -272,142 +252,8 @@ async function sendVoiceText(args: SendVoiceTextArgs): Promise<VoiceResponse> {
 }
 
 /**
- * Text-to-Speech using Amazon Polly
- * Returns Base64 encoded audio
- */
-async function synthesizeSpeech(text: string): Promise<string | undefined> {
-  try {
-    log('DEBUG', 'Synthesizing speech with Polly', { textLength: text.length });
-    
-    const command = new SynthesizeSpeechCommand({
-      Text: text,
-      OutputFormat: OutputFormat.MP3,
-      VoiceId: VoiceId.Mizuki, // 日本語女性音声
-      Engine: Engine.NEURAL, // ニューラルTTS for higher quality
-      LanguageCode: 'ja-JP',
-    });
-
-    const response = await pollyClient.send(command);
-    
-    if (response.AudioStream) {
-      // Convert stream to Base64
-      const chunks: Uint8Array[] = [];
-      const stream = response.AudioStream as AsyncIterable<Uint8Array>;
-      
-      for await (const chunk of stream) {
-        chunks.push(chunk);
-      }
-      
-      // Combine chunks and convert to Base64
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const combined = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        combined.set(chunk, offset);
-        offset += chunk.length;
-      }
-      
-      // Convert to Base64
-      const base64 = btoa(String.fromCharCode(...combined));
-      log('INFO', 'Speech synthesis completed', { audioSize: base64.length });
-      return base64;
-    }
-    
-    return undefined;
-  } catch (error) {
-    log('ERROR', 'Polly synthesis failed', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return undefined;
-  }
-}
-
-/**
- * Speech-to-Text using Amazon Transcribe (Streaming)
- * For simplicity, we use a synchronous approach with S3
- */
-async function transcribeAudio(audioBase64: string, sessionId: string): Promise<string | undefined> {
-  try {
-    log('DEBUG', 'Transcribing audio with Transcribe', { sessionId });
-    
-    // Decode Base64 to binary
-    const binaryString = atob(audioBase64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // Upload audio to S3
-    const audioKey = `transcribe/${sessionId}/${Date.now()}.webm`;
-    await s3Client.send(new PutObjectCommand({
-      Bucket: AUDIO_BUCKET,
-      Key: audioKey,
-      Body: bytes,
-      ContentType: 'audio/webm',
-    }));
-    
-    // Start transcription job
-    const jobName = `transcribe-${sessionId}-${Date.now()}`;
-    await transcribeClient.send(new StartTranscriptionJobCommand({
-      TranscriptionJobName: jobName,
-      Media: {
-        MediaFileUri: `s3://${AUDIO_BUCKET}/${audioKey}`,
-      },
-      MediaFormat: 'webm',
-      LanguageCode: 'ja-JP',
-      OutputBucketName: AUDIO_BUCKET,
-      OutputKey: `transcribe-output/${jobName}.json`,
-    }));
-    
-    // Poll for completion (with timeout)
-    const maxWaitTime = 30000; // 30 seconds
-    const pollInterval = 2000; // 2 seconds
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < maxWaitTime) {
-      const jobStatus = await transcribeClient.send(new GetTranscriptionJobCommand({
-        TranscriptionJobName: jobName,
-      }));
-      
-      const status = jobStatus.TranscriptionJob?.TranscriptionJobStatus;
-      
-      if (status === TranscriptionJobStatus.COMPLETED) {
-        // Get transcription result from S3
-        const resultResponse = await s3Client.send(new GetObjectCommand({
-          Bucket: AUDIO_BUCKET,
-          Key: `transcribe-output/${jobName}.json`,
-        }));
-        
-        const resultBody = await resultResponse.Body?.transformToString();
-        if (resultBody) {
-          const result = JSON.parse(resultBody);
-          const transcript = result.results?.transcripts?.[0]?.transcript;
-          log('INFO', 'Transcription completed', { transcript });
-          return transcript;
-        }
-      } else if (status === TranscriptionJobStatus.FAILED) {
-        log('ERROR', 'Transcription job failed');
-        return undefined;
-      }
-      
-      // Wait before next poll
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-    
-    log('WARN', 'Transcription timeout');
-    return '(音声認識がタイムアウトしました)';
-  } catch (error) {
-    log('ERROR', 'Transcribe failed', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return undefined;
-  }
-}
-
-/**
  * Voice Agent with audio input support
  * Supports TTS, STT, and full dialogue modes
- * Uses Amazon Polly for TTS and Amazon Transcribe for STT
  */
 async function invokeVoiceAgent(args: InvokeVoiceAgentArgs): Promise<VoiceResponse> {
   const { sessionId, text, audio, mode = 'DIALOGUE' } = args;
@@ -422,12 +268,13 @@ async function invokeVoiceAgent(args: InvokeVoiceAgentArgs): Promise<VoiceRespon
   try {
     let transcription: string | undefined;
     let responseText: string | undefined;
-    let responseAudio: string | undefined;
 
     // Step 1: Speech-to-Text if audio provided
     if (audio && (mode === 'STT' || mode === 'DIALOGUE')) {
       log('DEBUG', 'Processing audio input for STT');
-      transcription = await transcribeAudio(audio, sessionId);
+      // TODO: Use Nova Sonic or Amazon Transcribe for STT
+      // For now, return placeholder
+      transcription = '(音声認識は開発中です)';
     }
 
     // Step 2: Generate response text
@@ -437,8 +284,11 @@ async function invokeVoiceAgent(args: InvokeVoiceAgentArgs): Promise<VoiceRespon
     }
 
     // Step 3: Text-to-Speech if needed
+    let responseAudio: string | undefined;
     if (responseText && (mode === 'TTS' || mode === 'DIALOGUE')) {
-      responseAudio = await synthesizeSpeech(responseText);
+      // TODO: Use Nova Sonic or Amazon Polly for TTS
+      // For now, no audio output
+      log('DEBUG', 'TTS generation skipped (not yet implemented)');
     }
 
     const response: VoiceResponse = {
@@ -450,16 +300,13 @@ async function invokeVoiceAgent(args: InvokeVoiceAgentArgs): Promise<VoiceRespon
         sessionId,
         mode,
         timestamp: new Date().toISOString(),
-        ttsEnabled: !!responseAudio,
-        sttEnabled: !!transcription,
       },
     };
 
     log('INFO', 'Voice agent response generated', { 
       sessionId, 
       hasTranscription: !!transcription,
-      hasResponseText: !!responseText,
-      hasAudio: !!responseAudio,
+      hasResponseText: !!responseText 
     });
 
     return response;
