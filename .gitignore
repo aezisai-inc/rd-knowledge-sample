@@ -138,3 +138,6 @@ secrets/
 .venv/
 amplify_outputs.json
 test-results/
+
+# Lambda function node_modules
+amplify/functions/*/node_modules/
