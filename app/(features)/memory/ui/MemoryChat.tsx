@@ -383,12 +383,18 @@ export function MemoryChat() {
       console.log('[MemoryChat] response.data:', response.data);
       console.log('[MemoryChat] response.errors:', response.errors);
       
+      // Check for errors first
+      if (response.errors && response.errors.length > 0) {
+        console.error('[MemoryChat] GraphQL errors:', response.errors);
+        throw new Error(response.errors[0]?.message || 'GraphQL error');
+      }
+      
       // Try multiple possible response paths
       const responseText = 
         response.data?.message ||  // Direct path (expected by Amplify)
         (response.data as any)?.invokeMultimodal?.message ||  // GraphQL nested path
         (response as any)?.invokeMultimodal?.message ||  // Alternative path
-        'No response received';
+        `DEBUG: response.data keys = ${Object.keys(response.data || {}).join(', ')}`;
       
       addLog('llm', 'Response Generated', `${processingTime}ms total`, 'success', processingTime);
 
