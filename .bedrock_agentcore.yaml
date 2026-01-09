@@ -9,7 +9,7 @@ agents:
     description: AWS Nova を活用したマルチモーダル AI エージェント
     
     # Entry Point (module:attribute format)
-    entrypoint: src.main:app
+    entrypoint: main:app
     
     # Runtime Configuration
     timeout: 300
